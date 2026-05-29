@@ -8,9 +8,7 @@
     "dev": "npx serve .",
     "deploy": "vercel deploy"
   },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.40.0"
-  },
+  "dependencies": {},
   "engines": {
     "node": ">=18"
   }

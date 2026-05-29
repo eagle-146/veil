@@ -1,22 +1,19 @@
 /**
- * 골방 — Premium Meditation Endpoint
+ * Veil — Premium Meditation Endpoint (Google Gemini)
  *
- * Vercel-style serverless function (Node runtime).
- * Deploy to Vercel as-is, or adapt to Netlify Functions / Cloudflare Workers.
+ * Vercel-style serverless function. Calls the Gemini REST API with fetch
+ * (no SDK dependency). Returns a verse + meditation + prayer + application.
  *
- * Environment variables required:
- *   ANTHROPIC_API_KEY   — Claude API key (https://console.anthropic.com)
+ * Environment variables:
+ *   GEMINI_API_KEY   — Google AI Studio key (https://aistudio.google.com/apikey)
+ *   GEMINI_MODEL     — optional, default 'gemini-2.0-flash' (use '-lite' for cheapest)
  *
- * In production, also:
- *   - Authenticate the caller (JWT / session cookie) before calling Claude
- *   - Verify they have an active "동반자" or "동행" subscription
- *   - Apply per-user rate limiting (e.g. 30 calls/day on 동반자)
- *   - Persist (optionally) to an encrypted journal for the user
+ * Privacy: confession content is sensitive. Use the PAID Gemini tier (enable
+ * billing) so inputs are NOT used to improve models. The free tier may be.
+ * Production: verify subscription, rate-limit, and set a spend cap.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
 const SYSTEM_PROMPT = `너는 개혁주의 신학에 기초한 한국어 영성 지도자다. 너의 역할은 사용자가 적은 회개의 내용을 깊이 읽고, 사죄 선언이 아닌 "묵상의 마중물"을 제공하는 것이다.
 
@@ -41,8 +38,14 @@ const SYSTEM_PROMPT = `너는 개혁주의 신학에 기초한 한국어 영성 
   "application": "오늘 안에 실천할 수 있는 구체적인 한 가지 적용 (한 문장, 30자 이내)"
 }`;
 
+const SAFETY = [
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+];
+
 export default async function handler(req, res) {
-  // CORS for static front-end on same domain — adjust as needed
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -52,17 +55,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Lightweight same-origin guard. NOT real auth — also set a monthly spend
-  // limit in the Anthropic console and add subscription/rate-limit in production.
+  // Lightweight same-origin guard. NOT real auth — also set a spend cap and add
+  // subscription/rate-limit in production.
   const origin = req.headers.origin;
   if (origin) {
     try { if (req.headers.host && new URL(origin).host !== req.headers.host) return res.status(403).json({ error: 'Forbidden' }); }
     catch { /* malformed origin — ignore */ }
   }
-
-  // TODO: production — verify subscription here.
-  // const user = await verifyAuth(req);
-  // if (!user || !user.isPremium) return res.status(403).json({ error: 'Premium membership required' });
 
   try {
     const { confession } = req.body || {};
@@ -72,36 +71,28 @@ export default async function handler(req, res) {
     if (confession.length > 4000) {
       return res.status(400).json({ error: '입력이 너무 깁니다. 4000자 이내로 요약해 주세요.' });
     }
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) return res.status(500).json({ error: '서버에 GEMINI_API_KEY가 설정되지 않았습니다.' });
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
-      temperature: 0.7,
-      system: [
-        {
-          type: 'text',
-          text: SYSTEM_PROMPT,
-          cache_control: { type: 'ephemeral' }, // cache the long system prompt
-        },
-      ],
-      messages: [
-        {
-          role: 'user',
-          content: `다음은 한 형제/자매가 골방에서 적은 자백입니다. 위 가이드라인을 따라 묵상을 빚어주세요.\n\n[자백]\n${confession.trim()}`,
-        },
-      ],
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: 'user', parts: [{ text: `다음은 한 형제/자매가 골방에서 적은 자백입니다. 위 가이드라인을 따라 묵상을 빚어주세요.\n\n[자백]\n${confession.trim()}` }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1500, responseMimeType: 'application/json' },
+        safetySettings: SAFETY,
+      }),
     });
-
-    // Extract JSON from the model's response
-    const raw = message.content
-      .filter((b) => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-      .trim();
-
+    if (!resp.ok) {
+      const t = await resp.text();
+      throw new Error(`Gemini ${resp.status}: ${t.slice(0, 300)}`);
+    }
+    const data = await resp.json();
+    const raw = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
+    if (!raw) throw new Error('빈 응답');
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Model did not return JSON');
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
 
     return res.status(200).json({
       tier: 'premium',
