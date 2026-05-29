@@ -52,6 +52,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Lightweight same-origin guard. NOT real auth — also set a monthly spend
+  // limit in the Anthropic console and add subscription/rate-limit in production.
+  const origin = req.headers.origin;
+  if (origin) {
+    try { if (req.headers.host && new URL(origin).host !== req.headers.host) return res.status(403).json({ error: 'Forbidden' }); }
+    catch { /* malformed origin — ignore */ }
+  }
+
   // TODO: production — verify subscription here.
   // const user = await verifyAuth(req);
   // if (!user || !user.isPremium) return res.status(403).json({ error: 'Premium membership required' });

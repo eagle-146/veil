@@ -322,20 +322,35 @@ function renderPrayer() {
     </div>`;
 
   if (premium) {
-    $('#prayer-gen', mount).addEventListener('click', () => {
-      const text = composePrayer(items);
-      store.set(PRAYER_KEY, { date: todayStr(), text });
-      $('#prayer-out', mount).innerHTML = renderPrayerOut(text);
+    $('#prayer-gen', mount).addEventListener('click', async () => {
+      const btn = $('#prayer-gen', mount);
+      const label = btn.textContent;
+      btn.disabled = true; btn.textContent = '기도문을 빚는 중…';
+      let text = '', demo = false;
+      try {
+        const res = await fetch('/api/prayer', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entries: items }),
+        });
+        if (!res.ok) throw new Error('bad');
+        text = ((await res.json()).prayer || '').trim();
+        if (!text) throw new Error('empty');
+      } catch (e) {
+        text = composePrayer(items); demo = true;
+      }
+      store.set(PRAYER_KEY, { date: todayStr(), text, demo });
+      $('#prayer-out', mount).innerHTML = renderPrayerOut(text, demo);
       bindPrayerOut(mount);
+      btn.disabled = false; btn.textContent = label;
     });
     const last = store.get(PRAYER_KEY, null);
-    if (last) { $('#prayer-out', mount).innerHTML = renderPrayerOut(last.text); bindPrayerOut(mount); }
+    if (last) { $('#prayer-out', mount).innerHTML = renderPrayerOut(last.text, last.demo); bindPrayerOut(mount); }
   }
 }
-function renderPrayerOut(text) {
+function renderPrayerOut(text, demo) {
   return `<div class="prayer-output"><h3>이번 주 감사의 기도</h3><p>${escapeHtml(text)}</p>
     <div class="po-foot"><button class="btn btn-ghost btn-sm" id="prayer-copy">복사하기</button><button class="btn btn-text btn-sm" id="prayer-regen">다시 빚기</button>
-    <span class="hint" style="align-self:center">실제 AI 생성(api/prayer.js)은 서버 배포 후 활성화 · 현재는 데모</span></div></div>`;
+    ${demo ? `<span class="hint" style="align-self:center">데모 생성 · 실제 AI 기도문은 서버 연결 시</span>` : `<span class="hint" style="align-self:center">AI가 당신의 감사를 엮어 빚은 기도문입니다</span>`}</div></div>`;
 }
 function bindPrayerOut(mount) {
   const c = $('#prayer-copy', mount); if (c) c.addEventListener('click', () => { navigator.clipboard?.writeText($('.prayer-output p', mount).textContent); c.textContent = '복사됨 ✓'; setTimeout(()=>c.textContent='복사하기',1500); });

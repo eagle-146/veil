@@ -33,7 +33,15 @@ export default async function handler(req, res) {
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // TODO: production — verify 동반자/동행 subscription before calling Claude.
+  // Lightweight same-origin guard. NOT real auth — also set a monthly spend limit
+  // in the Anthropic console and add subscription/rate-limit in production.
+  const origin = req.headers.origin;
+  if (origin) {
+    try { if (req.headers.host && new URL(origin).host !== req.headers.host) return res.status(403).json({ error: 'Forbidden' }); }
+    catch { /* malformed origin — ignore */ }
+  }
+
+  // TODO: production — verify 동행 subscription before calling Claude.
 
   try {
     const { entries } = req.body || {};

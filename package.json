@@ -1,8 +1,8 @@
 {
-  "name": "golbang",
+  "name": "veil",
   "version": "0.1.0",
   "private": true,
-  "description": "골방 — 주님과 단 둘이 마주하는 회개의 자리",
+  "description": "Veil — 주님과 단 둘이 마주하는 회개의 자리",
   "type": "module",
   "scripts": {
     "dev": "npx serve .",
