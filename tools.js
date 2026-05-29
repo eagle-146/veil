@@ -309,13 +309,13 @@ function renderPrayer() {
   mount.innerHTML = `
     <div class="panel">
       <h2>이번 주 감사 모음</h2>
-      <p class="panel-sub">일주일간 감사일기를 ${need}일 작성하면, 그 내용으로 예배 때 읽을 기도문을 빚어 드립니다.</p>
+      <p class="panel-sub">한 주에 감사일기를 ${need}일 적으면, 그 내용으로 예배 때 읽을 기도문을 엮어 드립니다.</p>
       <div class="prayer-progress">
         <div class="prayer-track"><div class="prayer-fill" style="width:${pct}%"></div></div>
         <span class="prayer-count">${have} / ${need}일</span>
       </div>
       <div class="${premium ? '' : 'locked'}">
-        ${!premium ? `<div class="lock-overlay"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg><p><strong>동행 멤버십</strong> 전용 기능입니다. 한 주간의 감사를 모아 예배용 기도문으로 빚어 드려요.</p><a class="btn btn-gold btn-sm" href="index.html#pricing">멤버십 보기</a></div>` : ''}
+        ${!premium ? `<div class="lock-overlay"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg><p><strong>동행 멤버십</strong> 전용 기능입니다. 한 주의 감사를 모아 예배용 기도문으로 엮어 드려요.</p><a class="btn btn-gold btn-sm" href="index.html#pricing">멤버십 보기</a></div>` : ''}
         <button class="btn btn-gold" id="prayer-gen" ${have < need ? 'disabled' : ''}>${have < need ? `감사일기 ${need - have}일 더 필요해요` : '이번 주 기도문 생성하기'}</button>
         <div id="prayer-out"></div>
       </div>
@@ -325,7 +325,7 @@ function renderPrayer() {
     $('#prayer-gen', mount).addEventListener('click', async () => {
       const btn = $('#prayer-gen', mount);
       const label = btn.textContent;
-      btn.disabled = true; btn.textContent = '기도문을 빚는 중…';
+      btn.disabled = true; btn.textContent = '기도문을 엮는 중…';
       let text = '', demo = false;
       try {
         const res = await fetch('/api/prayer', {
@@ -349,8 +349,8 @@ function renderPrayer() {
 }
 function renderPrayerOut(text, demo) {
   return `<div class="prayer-output"><h3>이번 주 감사의 기도</h3><p>${escapeHtml(text)}</p>
-    <div class="po-foot"><button class="btn btn-ghost btn-sm" id="prayer-copy">복사하기</button><button class="btn btn-text btn-sm" id="prayer-regen">다시 빚기</button>
-    ${demo ? `<span class="hint" style="align-self:center">데모 생성 · 실제 AI 기도문은 서버 연결 시</span>` : `<span class="hint" style="align-self:center">AI가 당신의 감사를 엮어 빚은 기도문입니다</span>`}</div></div>`;
+    <div class="po-foot"><button class="btn btn-ghost btn-sm" id="prayer-copy">복사하기</button><button class="btn btn-text btn-sm" id="prayer-regen">다시 만들기</button>
+    <span class="hint" style="align-self:center">한 주의 감사를 엮어 만든 기도문입니다</span></div></div>`;
 }
 function bindPrayerOut(mount) {
   const c = $('#prayer-copy', mount); if (c) c.addEventListener('click', () => { navigator.clipboard?.writeText($('.prayer-output p', mount).textContent); c.textContent = '복사됨 ✓'; setTimeout(()=>c.textContent='복사하기',1500); });

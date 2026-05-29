@@ -13,6 +13,34 @@
 const DATA = (window.CONFESSION_DATA && window.CONFESSION_DATA.categories) || [];
 const GENERAL = (window.CONFESSION_DATA && window.CONFESSION_DATA.general) || null;
 
+/* 구체적 고백 사례 100선 (confession-cases.js). 카테고리보다 먼저, 더 정밀하게 매칭한다. */
+const CASES = (window.CONFESSION_CASES) || [];
+const CAT_BY_KEY = {};
+DATA.forEach(c => { CAT_BY_KEY[c.key] = c; });
+function catLabel(key) { return CAT_BY_KEY[key] ? CAT_BY_KEY[key].label : '회개'; }
+function careForCat(key) { return CAT_BY_KEY[key] ? (CAT_BY_KEY[key].care || null) : null; }
+
+/* 키워드 가중 점수: 긴(구체적) 구가 짧은 단어보다 크게 기여 */
+function scoreKeywords(lower, keywords) {
+  let s = 0;
+  for (const kw of (keywords || [])) {
+    if (kw && lower.includes(kw.toLowerCase())) s += Math.max(2, kw.length);
+  }
+  return s;
+}
+
+/* 100개 사례 중 가장 구체적으로 일치하는 항목(임계점 이상)을 고른다. 없으면 null → 카테고리 폴백. */
+function matchCase(text) {
+  if (!text || !CASES.length) return null;
+  const lower = text.toLowerCase();
+  let best = null, bestScore = 0;
+  for (const c of CASES) {
+    const s = scoreKeywords(lower, c.keywords);
+    if (s > bestScore) { bestScore = s; best = c; }
+  }
+  return bestScore >= 4 ? best : null;
+}
+
 function matchCategory(text) {
   if (!text || !DATA.length) return GENERAL;
   const lower = text.toLowerCase();
@@ -40,6 +68,20 @@ function pickRotating(arr, memKey) {
 }
 
 function buildResponse(text) {
+  // 1) 구체적 고백 사례(100선)에 정밀 매칭되면 그 맞춤 응답을 그대로 사용
+  const matched = matchCase(text);
+  if (matched) {
+    return {
+      tier: 'free',
+      category: catLabel(matched.cat),
+      verse: matched.verse,
+      meditation: matched.meditation,
+      prayer: matched.prayer,
+      application: matched.application,
+      care: matched.care || careForCat(matched.cat),
+    };
+  }
+  // 2) 폴백: 18개 카테고리(변이 회전) → general
   const cat = matchCategory(text) || GENERAL;
   return {
     tier: 'free',
@@ -202,7 +244,7 @@ document.querySelectorAll('[data-plan]').forEach(btn => {
     const plan = btn.dataset.plan;
     if (confirm(`[데모] ${plan === 'companion' ? '동행' : '가정'} 멤버십 결제로 이동합니다.\n실제 결제 연동(토스페이먼츠/스트라이프) 전까지는 데모 모드로 활성화됩니다.\n\n계속하시겠습니까?`)) {
       tierState.setPremium(true);
-      alert('데모 모드에서 멤버십이 활성화되었습니다.\n이제 "맞춤 묵상으로 받기" 옵션을 체크하면 Claude API가 호출됩니다.\n(api/meditate.js 배포 후)');
+      alert('데모 모드에서 동행 멤버십이 활성화되었습니다.\n무제한 회개와 멤버 전용 도구를 둘러보실 수 있어요.\n실제 결제 연동은 준비 중입니다.');
     }
   });
 });
