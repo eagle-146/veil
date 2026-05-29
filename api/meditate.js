@@ -72,7 +72,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: '입력이 너무 깁니다. 4000자 이내로 요약해 주세요.' });
     }
     const key = process.env.GEMINI_API_KEY;
-    if (!key) return res.status(500).json({ error: '서버에 GEMINI_API_KEY가 설정되지 않았습니다.' });
+    if (!key) return res.status(500).json({
+      error: '서버에 GEMINI_API_KEY가 설정되지 않았습니다.',
+      envNames: Object.keys(process.env).filter((n) => /GEMINI|ANTHROPIC|API|KEY/i.test(n)),
+    });
 
     const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
       method: 'POST',
