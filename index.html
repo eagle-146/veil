@@ -170,10 +170,7 @@
 
         <div class="confess-meta">
           <span class="confess-count"><span id="char-count">0</span> 자</span>
-          <label class="check">
-            <input type="checkbox" id="opt-detailed" />
-            <span>맞춤 묵상으로 받기 <em>(동행 멤버십)</em></span>
-          </label>
+          <span class="confess-privacy"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2M3.5 7h9v6.5a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>입력 내용은 기기 밖으로 나가지 않습니다</span>
         </div>
 
         <div class="step-actions">
@@ -240,8 +237,9 @@
           </div>
 
           <div class="response-tier" id="tier-banner">
-            <!-- filled by JS depending on free/premium -->
+            <!-- filled by JS -->
           </div>
+          <p class="resp-care" id="resp-care" hidden></p>
         </div>
 
         <div class="journal-card">
@@ -614,6 +612,7 @@
   </div>
 </footer>
 
+<script src="confession-data.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

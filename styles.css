@@ -1349,6 +1349,21 @@ body::after {
 
 .response-actions { justify-content: space-between; align-items: center; }
 
+/* privacy hint under the textarea */
+.confess-privacy { font-size: var(--fs-cap); color: var(--muted); display: inline-flex; align-items: center; }
+
+/* crisis / pastoral-care note (despair, addiction categories) */
+.resp-care {
+  margin: 4px 0 0;
+  padding: 14px 18px;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  border: 1px solid var(--sage);
+  color: var(--ink-2);
+  font-size: var(--fs-cap);
+  line-height: 1.7;
+}
+
 /* ── BRAND-STORY signature: light rises through the open door on reveal ── */
 .brand-meaning-intro { color: var(--ink-2); font-weight: 500; margin: 6px 0 0; }
 .veil-tear .gate-light {
