@@ -1,0 +1,307 @@
+/* ───────────────────────────────────────────────
+   Veil — 은혜의 도구 (Tools dashboard)
+   Reuses tokens & palette from styles.css. App-style UI.
+   ─────────────────────────────────────────────── */
+
+body.tools-body { background: var(--bg); }
+body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
+
+/* ── top bar ── */
+.tools-topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--line);
+}
+.tools-topbar-inner {
+  max-width: 1200px; margin: 0 auto;
+  padding: 10px 28px; min-height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.tools-topbar .brand { font-size: 1.2rem; }
+.tools-topbar .back {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--ink-3); font-size: var(--fs-cap);
+}
+.tools-topbar .back:hover { color: var(--ink); }
+.tier-area { display: flex; align-items: center; gap: 12px; }
+.tier-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: var(--fs-label); font-weight: 600; letter-spacing: .04em;
+  padding: 6px 14px; border-radius: 999px;
+  border: 1px solid var(--line-2); color: var(--ink-3);
+}
+.tier-badge.is-premium {
+  color: #8C6E4A; border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.tier-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); box-shadow: none; }
+.tier-badge.is-premium .dot { background: var(--gold); }
+
+/* ── layout ── */
+.tools-layout {
+  max-width: 1200px; margin: 0 auto;
+  padding: 32px 28px 96px;
+  display: grid; grid-template-columns: 248px 1fr; gap: 40px;
+  align-items: start;
+}
+.tools-side {
+  position: sticky; top: calc(var(--nav-h) + 24px);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.tools-side .side-kicker {
+  font-size: var(--fs-label); letter-spacing: .18em; text-transform: uppercase;
+  color: var(--gold); font-weight: 600; margin: 0 12px 12px;
+}
+.tools-side a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: var(--r-md);
+  color: var(--ink-2); font-size: .96rem; font-weight: 500;
+  transition: background var(--dur-micro) var(--easing), color var(--dur-micro) var(--easing);
+}
+.tools-side a .ic { width: 20px; height: 20px; color: var(--ink-3); flex: none; transition: color var(--dur-micro) var(--easing); }
+.tools-side a:hover { background: var(--bg-2); }
+.tools-side a.is-current { background: var(--white); color: var(--ink); box-shadow: var(--shadow-sm); }
+.tools-side a.is-current .ic { color: var(--gold); }
+.tools-side a .side-lock { margin-left: auto; font-size: .68rem; color: var(--gold); border: 1px solid var(--gold-soft); border-radius: 999px; padding: 1px 7px; }
+
+/* ── views ── */
+.tool-view { display: none; animation: viewIn .45s var(--easing); }
+.tool-view.is-active { display: block; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.tool-head { margin-bottom: 28px; }
+.tool-head .kicker { margin-bottom: 10px; }
+.tool-head h1 { font-size: clamp(1.9rem, 3vw, 2.6rem); margin: 0 0 .35em; }
+.tool-head p { color: var(--ink-3); max-width: 62ch; margin: 0; }
+.tool-head .tier-line { margin-top: 14px; font-size: var(--fs-cap); }
+
+.panel {
+  background: var(--white); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 28px 28px;
+  box-shadow: var(--shadow-sm); margin-bottom: 20px;
+}
+.panel h2 { font-size: 1.2rem; margin: 0 0 6px; }
+.panel .panel-sub { color: var(--ink-3); font-size: var(--fs-cap); margin: 0 0 20px; }
+.panel-split { display: grid; grid-template-columns: 1.1fr .9fr; gap: 20px; }
+
+/* generic fields */
+.field { margin-bottom: 16px; }
+.field > label { display: block; font-size: var(--fs-cap); color: var(--ink-3); margin-bottom: 8px; font-weight: 500; }
+.field input[type="text"], .field input[type="email"], .field input[type="time"], .field textarea, .field select {
+  width: 100%; font: inherit; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: 13px 16px;
+  transition: border-color var(--dur-micro) var(--easing), background var(--dur-micro) var(--easing), box-shadow var(--dur-micro) var(--easing);
+}
+.field textarea { font-family: var(--serif); line-height: 1.8; resize: vertical; min-height: 120px; }
+.field input:focus, .field textarea:focus, .field select:focus {
+  outline: none; border-color: var(--gold); background: var(--white); box-shadow: var(--focus-ring);
+}
+.field .hint { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+
+/* upsell / locked */
+.upsell {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--gold-soft), var(--bg-2));
+  border: 1px solid var(--gold); border-radius: var(--r-lg);
+  padding: 18px 22px; margin-bottom: 20px;
+}
+.upsell .ic { width: 26px; height: 26px; color: var(--gold); flex: none; }
+.upsell-text { flex: 1 1 260px; }
+.upsell-text strong { color: var(--ink); }
+.upsell-text p { margin: 4px 0 0; font-size: var(--fs-cap); color: var(--ink-3); }
+.locked { position: relative; }
+.locked .lock-overlay {
+  position: absolute; inset: 0; z-index: 3;
+  background: rgba(248,245,239,.72); backdrop-filter: blur(2px);
+  border-radius: var(--r-lg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px;
+}
+.locked .lock-overlay .ic { width: 30px; height: 30px; color: var(--gold); }
+.locked .lock-overlay p { font-size: var(--fs-cap); color: var(--ink-2); max-width: 32ch; margin: 0; }
+
+.tier-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .7rem; font-weight: 600; letter-spacing: .04em;
+  padding: 2px 9px; border-radius: 999px;
+}
+.tier-tag.free { color: var(--ink-3); background: var(--bg-2); border: 1px solid var(--line-2); }
+.tier-tag.paid { color: #fff; background: var(--gold); }
+
+/* feature compare mini-table inside tools */
+.compare { display: grid; gap: 8px; margin-top: 8px; }
+.compare-row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; font-size: var(--fs-cap); padding: 10px 0; border-bottom: 1px solid var(--line); }
+.compare-row:last-child { border-bottom: none; }
+.compare-row .c-free, .compare-row .c-paid { width: 84px; text-align: center; color: var(--ink-3); }
+.compare-row .c-paid { color: #8C6E4A; font-weight: 600; }
+
+/* ───────────  감사일기  ─────────── */
+.grat-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.streak { display: inline-flex; align-items: center; gap: 10px; }
+.streak-num { font-family: var(--serif); font-size: 2rem; font-weight: 600; color: var(--gold); line-height: 1; }
+.streak-label { font-size: var(--fs-cap); color: var(--ink-3); }
+.grat-date { font-family: var(--serif); color: var(--ink-2); font-size: 1rem; }
+.grat-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.grat-item .grat-no { width: 26px; height: 26px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--gold-soft); color: #8C6E4A; font-size: .8rem; font-weight: 600; font-family: var(--serif); }
+.grat-item input { flex: 1; }
+.grat-item .grat-del { background: none; border: none; color: var(--muted); padding: 6px; line-height: 0; }
+.grat-item .grat-del:hover { color: var(--ink); }
+.grat-actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
+.grat-saved { font-size: var(--fs-cap); color: var(--sage); opacity: 0; transition: opacity .3s; }
+.grat-saved.show { opacity: 1; }
+.grat-history { display: grid; gap: 12px; }
+.grat-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px 18px; }
+.grat-card .gc-date { font-size: var(--fs-cap); color: var(--gold); font-weight: 600; margin-bottom: 8px; }
+.grat-card ul { list-style: none; margin: 0; padding: 0; }
+.grat-card li { font-family: var(--serif); color: var(--ink-2); padding: 3px 0 3px 18px; position: relative; }
+.grat-card li::before { content: ''; position: absolute; left: 2px; top: .7em; width: 6px; height: 6px; border-radius: 50%; background: var(--gold-2); }
+.empty-note { color: var(--muted); font-size: var(--fs-cap); text-align: center; padding: 28px; }
+
+/* ───────────  큐티  ─────────── */
+.qt-passage {
+  background: linear-gradient(135deg, var(--white), var(--gold-soft));
+  border: 1px solid #E4D2AE; border-left: 4px solid var(--gold);
+  border-radius: var(--r-md); padding: 22px 24px; margin-bottom: 20px;
+}
+.qt-passage .qt-ref { font-size: var(--fs-cap); color: #8C6E4A; font-weight: 600; letter-spacing: .04em; margin-bottom: 8px; }
+.qt-passage blockquote { font-family: var(--serif); font-style: italic; font-size: 1.15rem; line-height: 1.85; color: var(--ink); margin: 0; }
+.qt-step { margin-bottom: 18px; }
+.qt-step .qt-step-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.qt-step .qt-step-no { font-family: var(--serif); font-weight: 600; color: var(--gold); }
+.qt-step .qt-step-name { font-weight: 600; color: var(--ink); }
+.qt-step .qt-step-guide { font-size: .82rem; color: var(--muted); }
+
+/* ───────────  매일의 말씀  ─────────── */
+.channel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.channel {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 20px 14px; border-radius: var(--r-md); cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg); text-align: center;
+  transition: border-color var(--dur-micro) var(--easing), background var(--dur-micro) var(--easing);
+}
+.channel .ic { width: 26px; height: 26px; color: var(--ink-3); }
+.channel span { font-size: .9rem; color: var(--ink-2); }
+.channel:hover { border-color: var(--line-2); }
+.channel.sel { border-color: var(--gold); background: var(--gold-soft); }
+.channel.sel .ic { color: var(--gold); }
+.channel.sel span { color: var(--ink); font-weight: 500; }
+.verse-card {
+  position: relative; border-radius: var(--r-lg); overflow: hidden;
+  min-height: 280px; display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 26px; color: #fff;
+}
+.verse-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(20,18,16,.55)); }
+.verse-card .vc-inner { position: relative; z-index: 2; }
+.verse-card .vc-verse { font-family: var(--serif); font-style: italic; font-size: 1.25rem; line-height: 1.7; text-shadow: 0 1px 12px rgba(0,0,0,.35); }
+.verse-card .vc-ref { margin-top: 10px; font-size: var(--fs-cap); color: var(--gold-2); letter-spacing: .04em; }
+.verse-card .vc-tag { position: absolute; top: 16px; left: 16px; z-index: 2; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; background: rgba(255,255,255,.16); backdrop-filter: blur(6px); padding: 4px 10px; border-radius: 999px; }
+
+/* ───────────  기도문 생성  ─────────── */
+.prayer-progress { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.prayer-track { flex: 1; height: 10px; border-radius: 999px; background: var(--bg-3); overflow: hidden; }
+.prayer-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--gold-soft), var(--gold)); transition: width .6s var(--easing); }
+.prayer-count { font-family: var(--serif); font-weight: 600; color: var(--gold); white-space: nowrap; }
+.prayer-output {
+  background: linear-gradient(160deg, var(--white), var(--bg-2));
+  border: 1px solid var(--line-2); border-radius: var(--r-lg);
+  padding: 32px 34px; margin-top: 8px;
+}
+.prayer-output h3 { font-family: var(--serif); font-size: 1.3rem; margin: 0 0 18px; color: var(--ink); }
+.prayer-output p { font-family: var(--serif); font-size: 1.12rem; line-height: 2; color: var(--ink-2); white-space: pre-wrap; margin: 0; }
+.prayer-output .po-foot { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ───────────  성경 책장  ─────────── */
+.shelf-wrap {
+  background: linear-gradient(180deg, #201F1C, var(--ink));
+  border-radius: var(--r-lg); padding: 28px 26px 22px;
+  box-shadow: var(--shadow-md);
+}
+.shelf-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; color: rgba(255,255,255,.6); font-size: var(--fs-cap); }
+.shelf-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+.shelf-legend .sw { width: 12px; height: 12px; border-radius: 3px; }
+.testament-label { color: var(--gold-2); font-size: var(--fs-label); letter-spacing: .18em; text-transform: uppercase; margin: 18px 0 12px; font-weight: 600; }
+.testament-label:first-child { margin-top: 0; }
+.shelf {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding-bottom: 14px; border-bottom: 3px solid rgba(0,0,0,.35);
+}
+.spine {
+  position: relative; width: 26px; height: 116px;
+  border-radius: 3px 3px 1px 1px; cursor: pointer; overflow: hidden;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  transition: transform var(--dur-micro) var(--easing), box-shadow var(--dur-micro) var(--easing);
+}
+.spine:hover { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,.4); z-index: 2; }
+.spine .spine-fill { position: absolute; left: 0; right: 0; bottom: 0; transition: height .5s var(--easing); }
+.spine .spine-name {
+  position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 7px; writing-mode: vertical-rl; text-orientation: mixed;
+  font-size: .6rem; color: rgba(255,255,255,.82); letter-spacing: .02em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6);
+}
+.spine.done { border-color: var(--gold-2); }
+.spine.done::after {
+  content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+  width: 5px; height: 5px; border-radius: 50%; background: var(--gold-2); box-shadow: 0 0 6px var(--gold-2);
+}
+.bible-stat { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-top: 18px; }
+.bible-stat .bs-num { font-family: var(--serif); font-size: 1.8rem; font-weight: 600; color: var(--gold); line-height: 1; }
+.bible-stat .bs-label { font-size: var(--fs-cap); color: var(--ink-3); }
+
+/* book detail panel (slide-in) */
+.book-panel-backdrop {
+  position: fixed; inset: 0; z-index: 80; background: rgba(24,24,24,.4);
+  opacity: 0; pointer-events: none; transition: opacity .3s var(--easing);
+}
+.book-panel-backdrop.open { opacity: 1; pointer-events: auto; }
+.book-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 81; width: min(420px, 92vw);
+  background: var(--bg); box-shadow: -20px 0 60px rgba(0,0,0,.18);
+  transform: translateX(100%); transition: transform .35s var(--easing);
+  display: flex; flex-direction: column; padding: 28px 28px 24px; overflow-y: auto;
+}
+.book-panel.open { transform: none; }
+.book-panel .bp-close { align-self: flex-end; background: none; border: none; color: var(--ink-3); padding: 6px; }
+.book-panel .bp-group { font-size: var(--fs-label); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+.book-panel h2 { font-size: 1.8rem; margin: 6px 0 4px; }
+.book-panel .bp-meta { color: var(--ink-3); font-size: var(--fs-cap); margin-bottom: 20px; }
+.chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; margin: 16px 0; }
+.chapter-cell {
+  aspect-ratio: 1; border-radius: var(--r-sm); border: 1px solid var(--line);
+  background: var(--white); color: var(--ink-3); font-size: .8rem;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: all var(--dur-micro) var(--easing);
+}
+.chapter-cell.read { background: var(--gold); border-color: var(--gold); color: #fff; }
+.chapter-cell:hover { border-color: var(--gold); }
+.chapter-cell.sel { outline: 2px solid var(--gold); outline-offset: 1px; }
+.bp-actions { display: flex; gap: 8px; padding-top: 16px; }
+
+/* in-panel Bible reader */
+.bp-reader { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 18px; }
+.bp-reader-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.bp-reader-title { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; color: var(--ink); }
+.bp-readtoggle.is-read { background: var(--gold); border-color: var(--gold); color: #fff; }
+.bp-verses { font-family: var(--serif); line-height: 1.95; color: var(--ink); font-size: 1.02rem; }
+.bp-verses .v { display: block; margin-bottom: 7px; }
+.bp-verses .vn { color: var(--gold); font-size: .7rem; font-weight: 700; vertical-align: 2px; margin-right: 7px; }
+.bp-empty { color: var(--ink-3); font-size: var(--fs-cap); text-align: center; padding: 26px 10px; line-height: 1.7; background: var(--bg-2); border-radius: var(--r-md); }
+.bp-nav { display: flex; justify-content: space-between; margin-top: 14px; }
+.bp-source { font-size: .72rem; color: var(--muted); margin: 14px 0 0; text-align: center; }
+
+/* ── responsive ── */
+@media (max-width: 860px) {
+  .tools-layout { grid-template-columns: 1fr; gap: 22px; }
+  .tools-side {
+    position: static; flex-direction: row; overflow-x: auto; gap: 6px;
+    padding-bottom: 6px; margin: 0 -28px; padding-left: 28px; padding-right: 28px;
+  }
+  .tools-side .side-kicker { display: none; }
+  .tools-side a { white-space: nowrap; padding: 9px 14px; }
+  .tools-side a .side-lock { display: none; }
+  .panel-split { grid-template-columns: 1fr; }
+  .channel-grid { grid-template-columns: 1fr; }
+}

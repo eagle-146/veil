@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"C:/Users/9835h_ztn/golbang/logos.html\")",
+      "Bash(start \"\" \"C:/Users/9835h_ztn/golbang/index.html\")",
+      "WebSearch",
+      "WebFetch(domain:www.apple.com)",
+      "WebFetch(domain:mantlr.com)",
+      "WebFetch(domain:www.pixeldarts.com)",
+      "WebFetch(domain:codershigh.github.io)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:css-tricks.com)",
+      "WebFetch(domain:www.nngroup.com)",
+      "WebFetch(domain:raw.studio)",
+      "Bash(mkdir -p /tmp/veil && echo \"workspace ready\")",
+      "Bash(where magick *)",
+      "Bash(where inkscape *)",
+      "Bash(where rsvg-convert *)",
+      "Bash(python -c \"import cairosvg; print\\('cairosvg available'\\)\")",
+      "Bash(magick -version)",
+      "Bash(rsvg-convert --version)",
+      "Bash(command -v rsvg-convert inkscape magick convert)",
+      "Bash(command -v node python python3)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(python3 -c \"import cairosvg; print\\('cairosvg ok'\\)\")",
+      "Bash(node -e ' *)",
+      "PowerShell(\\(Get-Command magick -ErrorAction SilentlyContinue\\).Source; \\(Get-Command inkscape -ErrorAction SilentlyContinue\\).Source; \\(Get-Command rsvg-convert -ErrorAction SilentlyContinue\\).Source; \\(Get-Command dotnet -ErrorAction SilentlyContinue\\).Source)",
+      "Bash(python3)",
+      "PowerShell(try { [xml]$x = Get-Content 'c:\\\\Users\\\\9835h_ztn\\\\golbang\\\\veil-mark.svg' -Raw; \"valid XML, root=\" + $x.DocumentElement.Name + \" viewBox=\" + $x.svg.viewBox } catch { \"XML ERROR: $_\" })",
+      "PowerShell(try { [xml]$x = Get-Content 'c:\\\\Users\\\\9835h_ztn\\\\golbang\\\\veil-mark.svg' -Raw; \"valid XML\" } catch { \"XML ERROR: $_\" })",
+      "Bash(convert -background none -density 300 veil_mark.svg -resize 16x16 fav16.png)",
+      "Bash(convert -background none veil_mark.svg -resize 64x64 m64.png)",
+      "PowerShell([xml]$x = Get-Content -Raw 'c:\\\\Users\\\\9835h_ztn\\\\golbang\\\\veil_mark.svg'; $paths = $x.svg.path; \"viewBox: $\\($x.svg.viewBox\\)\"; \"path count: $\\($paths.Count\\)\"; foreach\\($p in $paths\\){ \"len=$\\($p.d.Length\\)\" }; \"XML parsed OK\")"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

@@ -1,0 +1,110 @@
+/**
+ * 골방 — Premium Meditation Endpoint
+ *
+ * Vercel-style serverless function (Node runtime).
+ * Deploy to Vercel as-is, or adapt to Netlify Functions / Cloudflare Workers.
+ *
+ * Environment variables required:
+ *   ANTHROPIC_API_KEY   — Claude API key (https://console.anthropic.com)
+ *
+ * In production, also:
+ *   - Authenticate the caller (JWT / session cookie) before calling Claude
+ *   - Verify they have an active "동반자" or "동행" subscription
+ *   - Apply per-user rate limiting (e.g. 30 calls/day on 동반자)
+ *   - Persist (optionally) to an encrypted journal for the user
+ */
+
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const SYSTEM_PROMPT = `너는 개혁주의 신학에 기초한 한국어 영성 지도자다. 너의 역할은 사용자가 적은 회개의 내용을 깊이 읽고, 사죄 선언이 아닌 "묵상의 마중물"을 제공하는 것이다.
+
+[엄격한 신학적 가이드라인]
+- 너는 사제가 아니다. 죄를 사하는 권세는 오직 하나님께 있으며, 유일한 중보자는 예수 그리스도뿐이다(딤전 2:5).
+- "내가 너의 죄를 사한다" 같은 표현을 절대 쓰지 말 것. 대신 요한일서 1:9, 시편 51 등 성경의 약속을 가리켜라.
+- 모든 인용 성경 본문은 반드시 개역개정판이어야 한다. 본문이 확실치 않으면 인용하지 말고 다른 본문을 택하라.
+- 천주교적 고해, 마리아 중보, 연옥, 공로 사상 등 비개혁주의 요소를 결코 도입하지 말 것.
+- 율법주의("이렇게 해야 용서받는다") 또는 값싼 은혜("괜찮다, 신경쓰지 말라") 어느 쪽으로도 기울지 말 것.
+- 사용자가 자살, 자해, 학대 피해, 또는 타인에 대한 범죄(아동학대·성폭력 등)를 언급하면 반드시 "전문가/목회자/긴급 연락처와 즉시 상담" 권고를 묵상에 포함하라.
+
+[응답 형식]
+반드시 다음 JSON 스키마로만 응답하라. 다른 텍스트는 포함하지 말라:
+{
+  "category": "분류한 회개의 주제 (예: 분노, 교만, 정욕, 탐심, 거짓, 게으름, 시기, 두려움, 용서하지 못함, 기도와 말씀의 게으름, 일반 회개)",
+  "verse": {
+    "ref": "성경 책 장:절 (예: 시편 51:10-12)",
+    "text": "개역개정 본문 (한 단락, 인용부호 없이)"
+  },
+  "meditation": "사용자의 자백을 깊이 읽은 후, 그 죄의 본질을 복음의 빛으로 비추는 4-6문장의 묵상. 정죄가 아닌, 그러나 죄의 무게를 가볍게 만들지 않으며, 결국 그리스도의 십자가와 부활을 향하게 한다. 사용자의 구체적인 상황을 반영하되 인용하지 말 것(프라이버시).",
+  "prayer": "사용자가 그대로 따라 기도할 수 있는 1인칭 기도문. '주님'으로 시작, '예수님의 이름으로 기도합니다. 아멘.'으로 끝맺음. 3-5문장. 자백 → 간구 → 결단의 흐름.",
+  "application": "오늘 안에 실천할 수 있는 구체적인 한 가지 적용 (한 문장, 30자 이내)"
+}`;
+
+export default async function handler(req, res) {
+  // CORS for static front-end on same domain — adjust as needed
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res.status(204).end();
+  }
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // TODO: production — verify subscription here.
+  // const user = await verifyAuth(req);
+  // if (!user || !user.isPremium) return res.status(403).json({ error: 'Premium membership required' });
+
+  try {
+    const { confession } = req.body || {};
+    if (!confession || typeof confession !== 'string' || confession.trim().length < 4) {
+      return res.status(400).json({ error: '회개 내용을 입력해 주세요.' });
+    }
+    if (confession.length > 4000) {
+      return res.status(400).json({ error: '입력이 너무 깁니다. 4000자 이내로 요약해 주세요.' });
+    }
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      temperature: 0.7,
+      system: [
+        {
+          type: 'text',
+          text: SYSTEM_PROMPT,
+          cache_control: { type: 'ephemeral' }, // cache the long system prompt
+        },
+      ],
+      messages: [
+        {
+          role: 'user',
+          content: `다음은 한 형제/자매가 골방에서 적은 자백입니다. 위 가이드라인을 따라 묵상을 빚어주세요.\n\n[자백]\n${confession.trim()}`,
+        },
+      ],
+    });
+
+    // Extract JSON from the model's response
+    const raw = message.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n')
+      .trim();
+
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Model did not return JSON');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    return res.status(200).json({
+      tier: 'premium',
+      category: parsed.category,
+      verse: parsed.verse,
+      meditation: parsed.meditation,
+      prayer: parsed.prayer,
+      application: parsed.application,
+    });
+  } catch (err) {
+    console.error('[meditate] error:', err);
+    return res.status(500).json({ error: '묵상을 빚는 중 오류가 발생했습니다.' });
+  }
+}

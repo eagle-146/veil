@@ -1,0 +1,17 @@
+{
+  "name": "golbang",
+  "version": "0.1.0",
+  "private": true,
+  "description": "골방 — 주님과 단 둘이 마주하는 회개의 자리",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve .",
+    "deploy": "vercel deploy"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
