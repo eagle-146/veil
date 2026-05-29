@@ -107,6 +107,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('[meditate] error:', err);
-    return res.status(500).json({ error: '묵상을 빚는 중 오류가 발생했습니다.' });
+    return res.status(500).json({ error: '묵상을 빚는 중 오류가 발생했습니다.', detail: String((err && err.message) || err), model: MODEL });
   }
 }
