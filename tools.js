@@ -110,7 +110,7 @@ function route() {
   let id = (location.hash || '#gratitude').slice(1);
   if (!VIEW_IDS.includes(id)) id = 'gratitude';
   document.querySelectorAll('.tool-view').forEach(v => v.classList.toggle('is-active', v.id === `view-${id}`));
-  document.querySelectorAll('.tools-side a').forEach(a => a.classList.toggle('is-current', a.getAttribute('href') === `#${id}`));
+  document.querySelectorAll('.tools-nav a').forEach(a => a.classList.toggle('is-current', a.getAttribute('href') === `#${id}`));
   const r = { gratitude: renderGratitude, qt: renderQT, daily: renderDaily, prayer: renderPrayer, bible: renderBible, journal: renderJournal }[id];
   r && r();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -130,62 +130,352 @@ function gratStreak() {
   for (let i = 0; i < 366; i++) { const d = new Date(now); d.setDate(now.getDate() - i); const k = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; if ((data[k]||[]).some(x => x.trim())) streak++; else if (i > 0) break; }
   return streak;
 }
+/* 감사일기 — 365일 원형(12시=1월 1일, 시계방향). 사진 첨부 시 그 칸이 사진으로,
+   없으면 감성 색 10가지 중 하나로 채워진다. */
+const GRAT_META_KEY = 'veil.gratitude.meta';   // { 'YYYY-MM-DD': { color: 0-9, photo: dataURL } }
+const GRAT_COLORS = ['#E2C78A', '#CDB39A', '#AFC1A9', '#DDA993', '#A9BDB1', '#C3B3C9', '#E1B6AD', '#B3C0D1', '#E9D39B', '#C3B9A9'];
+const WD = ['일', '월', '화', '수', '목', '금', '토'];
+function getGratMeta() { return store.get(GRAT_META_KEY, {}); }
+function setGratMeta(m) { store.set(GRAT_META_KEY, m); }
+function yearDates(year) {
+  const out = []; const d = new Date(year, 0, 1);
+  while (d.getFullYear() === year) { out.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`); d.setDate(d.getDate() + 1); }
+  return out;
+}
+function prettyDate(s) { const [y, m, d] = s.split('-').map(Number); return `${m}월 ${d}일 (${WD[new Date(y, m - 1, d).getDay()]})`; }
+function resizePhoto(file, max, cb) {
+  const img = new Image(); const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const sc = Math.min(1, max / Math.max(img.width, img.height));
+    const w = Math.round(img.width * sc), h = Math.round(img.height * sc);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    try { cb(c.toDataURL('image/jpeg', 0.82)); } catch { cb(null); }
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); cb(null); };
+  img.src = url;
+}
+
+/* 회전 타원 카루셀: 365개 카드가 타원에 겹쳐 둘러서고 드래그/휠로 회전한다.
+   맨 위(12시·●)에 온 날이 포커스되어 가운데에 크게 펼쳐진다. */
+let gratOffset = null;     // 12시(위)에 오는 날의 인덱스 (실수 회전값)
+let gratFocusIdx = -1;     // 현재 포커스된 정수 인덱스
+let gratDates = [];
+let gratRX = 360, gratRY = 200;          // 화면 폭에 맞춰 동적으로 계산
+const GR_BEND = 0.64;
+let gratHoverIdx = -1, gratPop = 0;      // 마우스 올린 카드의 팝(아이폰 햅틱) 정도
+let gratTiltX = 0, gratTiltY = 0;        // 원 전체의 기우뚱(중심 고정)
+
 function renderGratitude() {
-  const premium = tier.isPremium();
   const mount = $('#grat-mount'); if (!mount) return;
-  const data = getGrat(); const today = todayStr();
-  const items = data[today] && data[today].length ? data[today].slice() : ['', '', ''];
-  const maxItems = premium ? 10 : FREE_GRAT_ITEMS;
-  const history = Object.keys(data).filter(k => k !== today && (data[k]||[]).some(x => x.trim())).sort().reverse();
-  const shownHistory = premium ? history : history.slice(0, FREE_GRAT_HISTORY);
+  const year = new Date().getFullYear();
+  gratDates = yearDates(year);
+  const todayIdx = Math.max(0, gratDates.indexOf(todayStr()));
+  if (gratOffset == null) gratOffset = todayIdx;
+  gratFocusIdx = -1;
 
   mount.innerHTML = `
-    <div class="panel">
-      <div class="grat-top">
-        <div class="streak"><span class="streak-num">${gratStreak()}</span><span class="streak-label">일 연속<br/>감사의 기록</span></div>
-        <span class="grat-date">${dateLabel(today)} · 오늘의 감사</span>
-      </div>
-      <p class="panel-sub">오늘 하루, 받은 은혜를 ${premium ? '마음껏' : `${FREE_GRAT_ITEMS}가지까지`} 적어 보세요. 당연하게 지나친 일들 속에서 감사를 발견하는 시간입니다.</p>
-      <div id="grat-items"></div>
-      <div class="grat-actions">
-        <button class="btn btn-text btn-sm" id="grat-add" ${items.length >= maxItems ? 'disabled' : ''}>+ 감사 추가${premium ? '' : ` (무료 ${FREE_GRAT_ITEMS}개)`}</button>
-        <button class="btn btn-gold btn-sm" id="grat-save">감사 저장</button>
-        <span class="grat-saved" id="grat-saved">✓ 저장되었습니다</span>
+    <div class="gr2-stage" id="gr2-stage">
+      <div class="gr2-world" id="gr2-world">
+        <div class="gr2-months" id="gr2-months"></div>
+        <div class="gr2-ring" id="gr2-ring"></div>
+        <span class="gr2-pin" aria-hidden="true"></span>
+        <div class="gr2-center" id="gr2-center"></div>
       </div>
     </div>
-    ${!premium ? `<div class="upsell"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg><div class="upsell-text"><strong>동행 멤버십</strong>에서는 하루 감사 무제한 · 사진 첨부 · 전체 기록 보관 · 감사 단어 통계 · 기도문 생성과 연동됩니다.<p>무료는 하루 ${FREE_GRAT_ITEMS}개 · 최근 ${FREE_GRAT_HISTORY}일 보관</p></div><a class="btn btn-gold btn-sm" href="index.html#pricing">멤버십 보기</a></div>` : ''}
-    <div class="panel">
-      <h2>지난 감사</h2>
-      <p class="panel-sub">${premium ? '전체 기록' : `최근 ${FREE_GRAT_HISTORY}일`}</p>
-      <div class="grat-history" id="grat-history"></div>
+    <div class="panel" id="grat-editor"></div>`;
+
+  buildRing();
+  computeRingDims();
+  bindRing();
+  layoutRing();
+  renderGratEditor();
+}
+
+/* 화면 폭·높이에 맞춰 원 크기를 키운다 (Clou처럼 화면을 가득 채우되 세로로 넘치지 않게). */
+function computeRingDims() {
+  const stage = $('#gr2-stage'); if (!stage) return;
+  const W = stage.clientWidth || window.innerWidth;
+  const H = window.innerHeight || 800;
+  let rx = Math.min(W * 0.40, 720);            // 폭 기준 (상한 720)
+  rx = Math.min(rx, (H * 0.72 - 60) / 0.95);   // 세로로 넘치지 않게
+  gratRX = Math.max(280, rx);
+  gratRY = gratRX * 0.40;                       // 약간 납작한 타원
+  stage.style.height = Math.round(gratRY * 2 + gratRX * 0.34 + 80) + 'px';
+  const pin = stage.querySelector('.gr2-pin');
+  if (pin) pin.style.top = `calc(50% + ${Math.round(gratRY)}px)`;
+}
+
+function buildRing() {
+  const ring = $('#gr2-ring'); if (!ring) return;
+  const data = getGrat(); const meta = getGratMeta();
+  const monCount = new Array(12).fill(0);
+  ring.innerHTML = gratDates.map((ds, i) => {
+    const m = meta[ds] || {}; const on = (data[ds] || []).some(x => x.trim()) || !!m.photo;
+    if (on) monCount[+ds.slice(5, 7) - 1]++;
+    let fill = '';
+    if (m.photo) fill = `background-image:url('${m.photo}')`;
+    else if (on) fill = `background:${GRAT_COLORS[(m.color || 0) % GRAT_COLORS.length]}`;
+    return `<button class="gr2-card${on ? ' on' : ''}" data-i="${i}" style="${fill}" aria-label="${prettyDate(ds)}"></button>`;
+  }).join('');
+  const y = gratDates[0].slice(0, 4);
+  let mh = '';
+  for (let mo = 0; mo < 12; mo++) {
+    const idx = gratDates.indexOf(`${y}-${pad(mo + 1)}-01`);
+    if (idx >= 0) mh += `<span class="gr2-mlabel" data-i="${idx}">${mo + 1}월${monCount[mo] ? `<i>${monCount[mo]}</i>` : ''}</span>`;
+  }
+  $('#gr2-months').innerHTML = mh;
+}
+
+function layoutRing() {
+  const ring = $('#gr2-ring'); if (!ring) return;
+  const N = gratDates.length;
+  const GSF = gratRX / 360;                   // 전역 크기 배율
+  ring.querySelectorAll('.gr2-card').forEach(card => {
+    const i = +card.dataset.i;
+    const ar = (i - gratOffset) * (2 * Math.PI / N);
+    const co = Math.cos(ar);
+    const nf = (1 + co) / 2;                  // 1 = 앞(아래·포커스), 0 = 뒤(위·멀어짐)
+    const x = Math.sin(ar) * gratRX, y = co * gratRY;
+    const rot = ar * 180 / Math.PI * GR_BEND;
+    let sx = (0.86 + nf * 0.18) * GSF, sy = (0.60 + nf * 0.52) * GSF;
+    let z = Math.round(nf * 1000);
+    if (i === gratHoverIdx && gratPop > 0.002) { const p = 1 + gratPop * 0.18; sx *= p; sy *= p; z += 1500; }   // 마우스 올린 카드 팝
+    card.style.transform = `translate(-50%,-50%) translate(${x.toFixed(1)}px,${y.toFixed(1)}px) rotate(${rot.toFixed(2)}deg) scale(${sx.toFixed(3)},${sy.toFixed(3)})`;
+    card.style.opacity = (0.24 + nf * 0.76).toFixed(3);
+    card.style.zIndex = z;
+  });
+  $('#gr2-months').querySelectorAll('.gr2-mlabel').forEach(lab => {
+    const i = +lab.dataset.i;
+    const ar = (i - gratOffset) * (2 * Math.PI / N);
+    const co = Math.cos(ar);
+    const nf = (1 + co) / 2;
+    const x = Math.sin(ar) * (gratRX + 34 * GSF), y = co * (gratRY + 24 * GSF);
+    lab.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-50%)`;
+    lab.style.opacity = (0.18 + nf * 0.82).toFixed(3);
+    lab.style.zIndex = Math.round(nf * 1000) + 1;
+  });
+  let fi = Math.round(gratOffset) % N; if (fi < 0) fi += N;
+  if (fi !== gratFocusIdx) {
+    const prev = ring.querySelector('.gr2-card.focus'); if (prev) prev.classList.remove('focus');
+    gratFocusIdx = fi;
+    const cur = ring.querySelector(`.gr2-card[data-i="${fi}"]`); if (cur) cur.classList.add('focus');
+    renderCenter();
+  }
+}
+
+function renderCenter() {
+  const c = $('#gr2-center'); if (!c) return;
+  const ds = gratDates[gratFocusIdx]; if (!ds) return;
+  const data = getGrat(); const meta = getGratMeta(); const m = meta[ds] || {};
+  const items = (data[ds] || []).filter(x => x.trim());
+  let media;
+  if (m.photo) media = `<div class="gr2c-media" style="background-image:url('${m.photo}')"></div>`;
+  else if (items.length) media = `<div class="gr2c-media" style="background:${GRAT_COLORS[(m.color || 0) % GRAT_COLORS.length]}"></div>`;
+  else media = `<div class="gr2c-media empty">아직 비어 있어요</div>`;
+  c.innerHTML = `<div class="gr2c-date">${prettyDate(ds)}${ds === todayStr() ? ' <span class="grat-today-chip">오늘</span>' : ''}</div>${media}<div class="gr2c-text">${items.length ? items.map(escapeHtml).join(' · ') : '이 날의 감사를 적어 보세요'}</div>`;
+}
+
+function bindRing() {
+  const stage = $('#gr2-stage'); if (!stage) return;
+  const world = $('#gr2-world');
+  const ring = $('#gr2-ring');
+  const N = gratDates.length;
+
+  // 물리 기반 — 호버 추종 + 관성(던지기) + 아이폰식 탄성 스냅 + 카드 팝 + 마우스 방향 기우뚱.
+  const MAXV = 0.6;        // 호버 최고 속도 (×1.2)
+  const HOVER_EASE = 0.08;
+  const DEAD = 0.06;       // 중앙 데드존
+  const DRAG_SENS = 0.09;  // 드래그 민감도 (×3)
+  const FRICTION = 0.94;   // 관성 감속
+  const SNAP_ENTER = 0.18; // 관성 → 스프링 전환 임계 속도
+  const STIFF = 0.20, DAMP = 0.76;  // 스프링(탄성 스냅)
+  const MAXSTEP = 20;      // 한 프레임 최대 이동
+  const MAXTILT = 7;       // 마우스 방향 기우뚱 최대(도)
+  const TILT_EASE = 0.10;
+
+  let mode = 'idle';       // idle | hover | momentum | spring
+  let vel = 0, targetVel = 0, sTarget = 0;
+  let dragging = false, lastX = 0, moved = 0, dragVel = 0;
+  let popTarget = 0, popVel = 0;        // 카드 팝
+  let tTiltX = 0, tTiltY = 0;           // 기우뚱 목표
+  let springDone = null;                // 스냅 완료 후 1회 실행(클릭 시 일기로 이동)
+  let raf = 0;
+  const clamp = (v) => Math.max(-MAXSTEP, Math.min(MAXSTEP, v));
+  const stop = () => { if (raf) cancelAnimationFrame(raf); raf = 0; };
+  const run = () => { if (!raf) raf = requestAnimationFrame(frame); };
+  const applyTilt = () => { if (world) world.style.transform = `rotateX(${gratTiltX.toFixed(2)}deg) rotateY(${gratTiltY.toFixed(2)}deg)`; };
+
+  function frame() {
+    if (mode === 'hover') {
+      vel += (targetVel - vel) * HOVER_EASE; gratOffset += vel;
+    } else if (mode === 'momentum') {
+      vel *= FRICTION; gratOffset += vel;
+      if (Math.abs(vel) < SNAP_ENTER) { mode = 'spring'; sTarget = Math.round(gratOffset); vel = 0; springDone = null; }
+    } else if (mode === 'spring') {
+      vel = clamp((vel + (sTarget - gratOffset) * STIFF) * DAMP); gratOffset += vel;
+      if (Math.abs(sTarget - gratOffset) < 0.003 && Math.abs(vel) < 0.003) {
+        gratOffset = sTarget; vel = 0; mode = 'idle'; renderGratEditor();
+        if (springDone) { const cb = springDone; springDone = null; cb(); }
+      }
+    }
+    popVel += (popTarget - gratPop) * 0.38; popVel *= 0.62; gratPop += popVel;   // 팝 스프링
+    if (gratPop < 0) { gratPop = 0; popVel = 0; }
+    gratTiltX += (tTiltX - gratTiltX) * TILT_EASE;                               // 기우뚱 이징
+    gratTiltY += (tTiltY - gratTiltY) * TILT_EASE; applyTilt();
+    layoutRing();
+    const popActive = Math.abs(popTarget - gratPop) > 0.002 || Math.abs(popVel) > 0.002;
+    const tiltActive = Math.abs(tTiltX - gratTiltX) > 0.02 || Math.abs(tTiltY - gratTiltY) > 0.02;
+    if (mode === 'idle' && !popActive && !tiltActive) { raf = 0; return; }
+    raf = requestAnimationFrame(frame);
+  }
+  function springTo(target, done) { mode = 'spring'; sTarget = target; vel = 0; springDone = done || null; run(); }
+
+  function aimSpin(clientX) {
+    const r = stage.getBoundingClientRect();
+    const nx = (clientX - r.left) / r.width - 0.5;
+    let mag = 0;
+    if (nx > DEAD) mag = (nx - DEAD) / (0.5 - DEAD);
+    else if (nx < -DEAD) mag = (nx + DEAD) / (0.5 - DEAD);
+    mag = Math.max(-1, Math.min(1, mag));
+    targetVel = Math.sign(mag) * Math.pow(Math.abs(mag), 1.6) * MAXV;
+  }
+  function aimTilt(clientX, clientY) {
+    const r = stage.getBoundingClientRect();
+    const nx = Math.max(-1, Math.min(1, ((clientX - r.left) / r.width - 0.5) * 2));
+    const ny = Math.max(-1, Math.min(1, ((clientY - r.top) / r.height - 0.5) * 2));
+    tTiltY = nx * MAXTILT;     // 좌우로 기우뚱
+    tTiltX = -ny * MAXTILT;    // 상하로 기우뚱
+  }
+
+  stage.addEventListener('pointerenter', (e) => { if (dragging) return; mode = 'hover'; aimSpin(e.clientX); aimTilt(e.clientX, e.clientY); run(); });
+  stage.addEventListener('pointerleave', () => { if (dragging) return; mode = 'momentum'; popTarget = 0; tTiltX = 0; tTiltY = 0; run(); });
+
+  // 휠은 원을 돌리지 않고 페이지를 그대로 스크롤한다(요청). 회전은 마우스 이동/드래그로만.
+
+  stage.addEventListener('pointerdown', (e) => {
+    dragging = true; moved = 0; lastX = e.clientX; dragVel = 0; vel = 0; mode = 'idle';
+    try { stage.setPointerCapture(e.pointerId); } catch {}
+    stage.classList.add('dragging'); run();
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (dragging) {
+      const dx = e.clientX - lastX; lastX = e.clientX; moved += Math.abs(dx);
+      const dv = -dx * DRAG_SENS; gratOffset += dv; dragVel = clamp(dv);
+      aimTilt(e.clientX, e.clientY); run();
+      return;
+    }
+    mode = 'hover'; aimSpin(e.clientX); aimTilt(e.clientX, e.clientY); run();
+  });
+  const endDrag = () => {
+    if (!dragging) return; dragging = false; stage.classList.remove('dragging');
+    vel = dragVel; mode = 'momentum'; run();    // 던진 속도로 관성 시작
+  };
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+
+  // 마우스 올린 카드 팝 (특히 앞=6시 카드)
+  ring.addEventListener('pointerover', (e) => {
+    if (dragging) return; const c = e.target.closest('.gr2-card'); if (!c) return;
+    gratHoverIdx = +c.dataset.i; popTarget = 1; run();
+  });
+  ring.addEventListener('pointerout', (e) => {
+    const c = e.target.closest('.gr2-card'); if (!c) return;
+    if (+c.dataset.i === gratHoverIdx) { popTarget = 0; run(); }
+  });
+
+  // 카드 클릭 → 그 날을 탄성 스냅으로 가운데로 옮긴 뒤, 그 날의 감사일기로 이동
+  ring.querySelectorAll('.gr2-card').forEach(card => {
+    card.addEventListener('click', () => {
+      if (moved > 6) return;                       // 드래그였으면 클릭 무시
+      const i = +card.dataset.i;
+      let diff = ((i - gratOffset) % N + N) % N; if (diff > N / 2) diff -= N;
+      springTo(gratOffset + diff, scrollToGratEditor);
+    });
+  });
+}
+
+/* 클릭한 날의 감사일기(작성·열람) 영역으로 부드럽게 이동 */
+function scrollToGratEditor() {
+  const ed = document.getElementById('grat-editor'); if (!ed) return;
+  const nav = document.querySelector('.tools-topbar');
+  const offset = (nav ? nav.offsetHeight : 0) + 16;
+  const y = ed.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top: y, behavior: 'smooth' });
+}
+
+/* 창 크기 바뀌면 원 크기 재계산 */
+window.addEventListener('resize', () => { if (document.getElementById('gr2-stage')) { computeRingDims(); layoutRing(); } });
+
+function renderGratEditor() {
+  const editor = $('#grat-editor'); if (!editor) return;
+  const premium = tier.isPremium();
+  const ds = gratDates[gratFocusIdx] || todayStr(); const data = getGrat(); const meta = getGratMeta();
+  const items = data[ds] && data[ds].length ? data[ds].slice() : ['', '', ''];
+  const maxItems = premium ? 10 : 3;
+  let pendingPhoto = (meta[ds] || {}).photo || null;
+
+  editor.innerHTML = `
+    <div class="grat-ed-head"><h2>${prettyDate(ds)}</h2>${ds === todayStr() ? '<span class="grat-today-chip">오늘</span>' : ''}</div>
+    <p class="panel-sub">받은 은혜를 ${premium ? '마음껏' : '3가지까지'} 적어 보세요.</p>
+    <div id="grat-items"></div>
+    <div class="grat-photo">
+      <div class="gphoto-prev${pendingPhoto ? '' : ' empty'}" id="gphoto-prev" style="${pendingPhoto ? `background-image:url('${pendingPhoto}')` : ''}">${pendingPhoto ? '' : '사진 없음'}</div>
+      <label class="btn btn-ghost btn-sm">사진 첨부<input type="file" accept="image/*" id="grat-file" hidden></label>
+      <button class="btn btn-text btn-sm" id="grat-photo-del"${pendingPhoto ? '' : ' style="display:none"'}>사진 제거</button>
+      <span class="hint">사진을 넣으면 원의 그 날 칸이 사진으로 채워집니다.</span>
+    </div>
+    <div class="grat-actions">
+      <button class="btn btn-text btn-sm" id="grat-add">+ 감사 추가${premium ? '' : ' (무료 3개)'}</button>
+      <button class="btn btn-gold btn-sm" id="grat-save">이 날의 감사 저장</button>
+      <span class="grat-saved" id="grat-saved">✓ 저장되었습니다</span>
     </div>`;
 
-  const itemsWrap = $('#grat-items', mount);
+  const itemsWrap = $('#grat-items', editor);
   function drawItems() {
     itemsWrap.innerHTML = '';
     items.forEach((val, i) => {
-      const row = el(`<div class="grat-item"><span class="grat-no">${i+1}</span><input type="text" value="${val.replace(/"/g,'&quot;')}" placeholder="감사한 일 ${i+1}"/><button class="grat-del" title="삭제">✕</button></div>`);
+      const row = el(`<div class="grat-item"><span class="grat-no">${i + 1}</span><input type="text" value="${String(val).replace(/"/g, '&quot;')}" placeholder="감사한 일 ${i + 1}"/><button class="grat-del" title="삭제">✕</button></div>`);
       row.querySelector('input').addEventListener('input', e => items[i] = e.target.value);
-      row.querySelector('.grat-del').addEventListener('click', () => { items.splice(i,1); if (!items.length) items.push(''); drawItems(); $('#grat-add', mount).disabled = items.length >= maxItems; });
+      row.querySelector('.grat-del').addEventListener('click', () => { items.splice(i, 1); if (!items.length) items.push(''); drawItems(); });
       itemsWrap.appendChild(row);
     });
+    $('#grat-add', editor).disabled = items.length >= maxItems;
   }
   drawItems();
-  $('#grat-add', mount).addEventListener('click', () => {
-    if (items.length >= maxItems) { if (!premium) location.href = 'index.html#pricing'; return; }
-    items.push(''); drawItems(); $('#grat-add', mount).disabled = items.length >= maxItems;
-  });
-  $('#grat-save', mount).addEventListener('click', () => {
-    const clean = items.map(x => x.trim()).filter(Boolean);
-    const d = getGrat(); if (clean.length) d[today] = clean; else delete d[today];
-    store.set(GRAT_KEY, d);
-    const s = $('#grat-saved', mount); s.classList.add('show'); setTimeout(() => s.classList.remove('show'), 1800);
-    renderGratitude();
-  });
 
-  const hist = $('#grat-history', mount);
-  if (!shownHistory.length) hist.innerHTML = `<p class="empty-note">아직 지난 기록이 없어요. 오늘의 첫 감사를 적어 보세요.</p>`;
-  else hist.innerHTML = shownHistory.map(k => `<div class="grat-card"><div class="gc-date">${dateLabel(k)}</div><ul>${data[k].map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul></div>`).join('');
+  $('#grat-add', editor).addEventListener('click', () => {
+    if (items.length >= maxItems) { if (!premium) location.href = 'index.html#pricing'; return; }
+    items.push(''); drawItems();
+  });
+  $('#grat-file', editor).addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    resizePhoto(f, 520, (url) => {
+      if (!url) return;
+      pendingPhoto = url;
+      const prev = $('#gphoto-prev', editor);
+      prev.style.backgroundImage = `url('${url}')`; prev.classList.remove('empty'); prev.textContent = '';
+      $('#grat-photo-del', editor).style.display = '';
+    });
+  });
+  $('#grat-photo-del', editor).addEventListener('click', () => {
+    pendingPhoto = null;
+    const prev = $('#gphoto-prev', editor);
+    prev.style.backgroundImage = ''; prev.classList.add('empty'); prev.textContent = '사진 없음';
+    $('#grat-photo-del', editor).style.display = 'none';
+  });
+  $('#grat-save', editor).addEventListener('click', () => {
+    const clean = items.map(x => x.trim()).filter(Boolean);
+    const d = getGrat(); if (clean.length) d[ds] = clean; else delete d[ds]; store.set(GRAT_KEY, d);
+    const mm = getGratMeta(); const cur = mm[ds] || {};
+    if (pendingPhoto) cur.photo = pendingPhoto; else delete cur.photo;
+    if (clean.length && !pendingPhoto && cur.color == null) cur.color = Math.floor(Math.random() * GRAT_COLORS.length);
+    if (!pendingPhoto && !clean.length) delete mm[ds]; else mm[ds] = cur;
+    setGratMeta(mm);
+    renderGratitude();
+    const s = $('#grat-saved'); if (s) { s.classList.add('show'); setTimeout(() => s.classList.remove('show'), 1600); }
+  });
 }
 function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 

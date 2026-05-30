@@ -25,6 +25,13 @@ create table if not exists public.user_data (
 
 alter table public.user_data enable row level security;
 
+-- 정책을 먼저 지우고 다시 만들어, 여러 번 실행해도 안전하게 합니다.
+-- (create policy 는 if not exists 를 지원하지 않아, 재실행 시 42710 중복 에러가 납니다.)
+drop policy if exists "own rows - select" on public.user_data;
+drop policy if exists "own rows - insert" on public.user_data;
+drop policy if exists "own rows - update" on public.user_data;
+drop policy if exists "own rows - delete" on public.user_data;
+
 create policy "own rows - select" on public.user_data
   for select using (auth.uid() = user_id);
 create policy "own rows - insert" on public.user_data
@@ -36,6 +43,11 @@ create policy "own rows - delete" on public.user_data
 ```
 
 이 정책 덕분에 **각 사용자는 오직 자기 행(row)만** 읽고 쓸 수 있습니다(계정 단위 보안).
+
+> 이미 한 번 실행해서 `42710: policy ... already exists` 에러가 났더라도 괜찮습니다.
+> 위 SQL은 정책을 먼저 지우고 다시 만들므로, **몇 번을 다시 Run 해도 안전**합니다.
+> 설정이 잘 됐는지 확인하려면: `select policyname, cmd from pg_policies where tablename = 'user_data';`
+> (select·insert·update·delete 4개가 보이면 정상입니다.)
 
 ## 3) (권장) 이메일 확인 끄기 — 즉시 가입/로그인되게
 **Authentication → Sign In / Providers → Email** 에서 **"Confirm email"** 을 **끄면**,
