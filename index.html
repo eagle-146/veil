@@ -256,6 +256,7 @@
           <div class="journal-text">
             <span class="block-label">회개 일기</span>
             <p>오늘 이 자리를 일기로 남겨 두시겠어요? 시간이 흐른 뒤 다시 펴 보면, 주께서 행하신 일이 그대로 보입니다.</p>
+            <p class="journal-note">회개 내용은 기본적으로 저장되지 않습니다. ‘일기에 저장’을 누를 때만 내 계정에 보관되어, 로그인한 다른 기기에서도 볼 수 있어요.</p>
             <p class="journal-acct" id="journal-acct" hidden></p>
           </div>
           <button class="btn btn-ghost btn-sm" id="btn-save">
@@ -277,7 +278,7 @@
 
     <p class="app-note reveal">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2M3.5 7h9v6.5a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-      무료 이용 시 입력 내용은 브라우저를 닫는 즉시 사라집니다. 동행 멤버십에서는 암호화된 회개 일기로 보존됩니다.
+      회개 내용은 기본적으로 어디에도 저장되지 않고, 창을 닫으면 사라집니다. ‘일기에 저장’을 직접 누르실 때만 내 계정에 안전하게 보관됩니다.
     </p>
 
   </div>
@@ -541,7 +542,7 @@
       </details>
       <details class="reveal" style="--d:.12s">
         <summary>입력한 회개 내용은 안전한가요?</summary>
-        <div class="faq-a"><p>무료로 쓰실 때 입력 내용은 서버로 전송되지 않고 기기 안에서만 처리됩니다. 회개 일기로 저장하실 때만 암호화해 보관하며, 어떤 경우에도 광고나 학습에 사용하지 않습니다.</p></div>
+        <div class="faq-a"><p>고백을 적고 응답을 받는 과정은 기기 안에서만 처리되며, 그 내용은 어디에도 전송·저장되지 않습니다. 오직 ‘일기에 저장’을 직접 누르실 때만, 로그인한 내 계정에 보관되어 다른 기기에서도 볼 수 있습니다. 저장된 기록은 본인만 접근할 수 있으며(계정 단위 보안), 광고나 AI 학습에 사용하지 않습니다.</p></div>
       </details>
       <details class="reveal" style="--d:.18s">
         <summary>교회 출석을 대체하나요?</summary>
@@ -622,6 +623,7 @@
   </div>
 </footer>
 
+<script src="supabase-config.js"></script>
 <script src="auth.js"></script>
 <script src="confession-data.js"></script>
 <script src="confession-cases.js"></script>

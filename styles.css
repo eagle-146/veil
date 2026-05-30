@@ -1497,7 +1497,8 @@ body.vauth-lock { overflow: hidden; }
 .auth-menu-email { font-size: .8rem; color: var(--ink-3); padding: 4px 8px 10px; border-bottom: 1px solid var(--line); margin-bottom: 8px; word-break: break-all; }
 .auth-menu .auth-logout { width: 100%; text-align: left; background: none; border: none; padding: 8px; border-radius: var(--r-sm); cursor: pointer; font: inherit; font-size: .9rem; color: var(--ink); }
 .auth-menu .auth-logout:hover { background: var(--bg-2); }
-.journal-acct { font-size: .82rem; color: var(--gold); margin: 8px 0 0; font-weight: 500; }
+.journal-note { font-size: .8rem; color: var(--muted); margin: 8px 0 0; line-height: 1.55; }
+.journal-acct { font-size: .82rem; color: var(--gold); margin: 6px 0 0; font-weight: 500; }
 
 /* 기도문 생성 — 감사 반영 안내 */
 .prayer-meta { color: var(--ink-2); font-size: .92rem; margin: 0 0 16px; }
