@@ -11,7 +11,8 @@ const tier = {
   isPremium: () => localStorage.getItem(TIER_KEY) === 'premium',
   set: (on) => localStorage.setItem(TIER_KEY, on ? 'premium' : 'free'),
 };
-const store = {
+/* 로그인 시 계정별로 자동 분리 저장(auth.js). 비로그인은 기존 키 그대로. */
+const store = (window.Veil && Veil.store) ? Veil.store : {
   get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch { return d; } },
   set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
 };
@@ -104,13 +105,13 @@ function renderTier() {
 }
 
 /* ───────────  router  ─────────── */
-const VIEW_IDS = ['gratitude', 'qt', 'daily', 'prayer', 'bible'];
+const VIEW_IDS = ['gratitude', 'qt', 'daily', 'prayer', 'bible', 'journal'];
 function route() {
   let id = (location.hash || '#gratitude').slice(1);
   if (!VIEW_IDS.includes(id)) id = 'gratitude';
   document.querySelectorAll('.tool-view').forEach(v => v.classList.toggle('is-active', v.id === `view-${id}`));
   document.querySelectorAll('.tools-side a').forEach(a => a.classList.toggle('is-current', a.getAttribute('href') === `#${id}`));
-  const r = { gratitude: renderGratitude, qt: renderQT, daily: renderDaily, prayer: renderPrayer, bible: renderBible }[id];
+  const r = { gratitude: renderGratitude, qt: renderQT, daily: renderDaily, prayer: renderPrayer, bible: renderBible, journal: renderJournal }[id];
   r && r();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -300,28 +301,31 @@ const PRAYER_KEY = 'veil.prayer.last';
 function renderPrayer() {
   const premium = tier.isPremium();
   const mount = $('#prayer-mount'); if (!mount) return;
-  const weekDays = gratWeekDays();
-  const need = 7, have = weekDays.length;
-  const pct = Math.min(100, Math.round(have / need * 100));
   const data = getGrat();
-  const items = weekDays.flatMap(k => data[k] || []).filter(Boolean);
+  // 이번 주 감사를 우선 모으고, 없으면 가장 최근 감사 기록을 사용 (7일 조건 없음)
+  let items = gratWeekDays().flatMap(k => data[k] || []).filter(x => x && x.trim());
+  if (!items.length) {
+    const days = Object.keys(data).filter(k => (data[k] || []).some(x => x.trim())).sort().reverse();
+    items = days.flatMap(k => data[k] || []).filter(x => x && x.trim());
+  }
+  const hasAny = items.length > 0;
 
   mount.innerHTML = `
     <div class="panel">
-      <h2>이번 주 감사 모음</h2>
-      <p class="panel-sub">한 주에 감사일기를 ${need}일 적으면, 그 내용으로 예배 때 읽을 기도문을 엮어 드립니다.</p>
-      <div class="prayer-progress">
-        <div class="prayer-track"><div class="prayer-fill" style="width:${pct}%"></div></div>
-        <span class="prayer-count">${have} / ${need}일</span>
-      </div>
+      <h2>감사 기반 기도문</h2>
+      <p class="panel-sub">적어 둔 감사일기를 모아, 예배 때 그대로 읽을 수 있는 기도문으로 엮어 드립니다.</p>
+      <p class="prayer-meta">${hasAny ? `이번에 반영할 감사 <strong>${items.length}</strong>가지` : '아직 적어 둔 감사가 없어요. 한 가지라도 적으면 기도문을 엮어 드릴게요.'}</p>
       <div class="${premium ? '' : 'locked'}">
-        ${!premium ? `<div class="lock-overlay"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg><p><strong>동행 멤버십</strong> 전용 기능입니다. 한 주의 감사를 모아 예배용 기도문으로 엮어 드려요.</p><a class="btn btn-gold btn-sm" href="index.html#pricing">멤버십 보기</a></div>` : ''}
-        <button class="btn btn-gold" id="prayer-gen" ${have < need ? 'disabled' : ''}>${have < need ? `감사일기 ${need - have}일 더 필요해요` : '이번 주 기도문 생성하기'}</button>
+        ${!premium ? `<div class="lock-overlay"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg><p><strong>동행 멤버십</strong> 전용 기능입니다. 적어 둔 감사를 모아 예배용 기도문으로 엮어 드려요.</p><a class="btn btn-gold btn-sm" href="index.html#pricing">멤버십 보기</a></div>` : ''}
+        <div class="prayer-cta">
+          <button class="btn btn-gold" id="prayer-gen" ${hasAny ? '' : 'disabled'}>${hasAny ? '기도문 생성하기' : '먼저 감사일기를 적어 주세요'}</button>
+          ${hasAny ? '' : `<a class="btn btn-text btn-sm" href="#gratitude">감사일기 적으러 가기 →</a>`}
+        </div>
         <div id="prayer-out"></div>
       </div>
     </div>`;
 
-  if (premium) {
+  if (premium && hasAny) {
     $('#prayer-gen', mount).addEventListener('click', async () => {
       const btn = $('#prayer-gen', mount);
       const label = btn.textContent;
@@ -363,6 +367,43 @@ function composePrayer(items) {
     ? `돌아보니 ${pick.join(', ')} — 무엇 하나 당연한 것이 없었습니다. 작고 평범한 일들 속에 주님의 손길이 있었음을 이제야 봅니다.`
     : '작고 평범한 하루하루 속에 주님께서 함께하셨음을 고백합니다.';
   return `사랑이 많으신 하나님 아버지,\n지난 한 주, 베풀어 주신 은혜를 헤아리며 감사함으로 나아갑니다.\n\n${mid}\n\n당연하게 여겼던 것들이 사실은 아침마다 새롭게 부어 주신 자비였습니다(애 3:23). 이 감사가 입술의 고백으로 그치지 않고, 한 주를 살아 내는 삶의 예배가 되게 하소서.\n\n다가오는 한 주도 주님만 신뢰하며 걷게 하시고, 받은 사랑을 이웃에게도 흘려보내게 하옵소서.\n예수님의 이름으로 기도합니다. 아멘.`;
+}
+
+/* ════════════  회개 일기 (계정 보관)  ════════════ */
+const CONFESSION_JOURNAL_KEY = 'veil.confession.journal';
+function renderJournal() {
+  const mount = $('#journal-mount'); if (!mount) return;
+  const u = window.Veil && Veil.auth.current();
+  if (!u) {
+    mount.innerHTML = `<div class="panel journal-empty">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg>
+      <h2>로그인이 필요해요</h2>
+      <p class="panel-sub">회개 일기는 계정에 보관됩니다. 로그인하면 내가 남긴 기록을 다시 펴 볼 수 있어요. (회개 내용은 이 기기 안에만 저장됩니다.)</p>
+      <button class="btn btn-gold btn-sm" id="journal-login">로그인 / 가입</button>
+    </div>`;
+    const b = $('#journal-login', mount); if (b) b.addEventListener('click', () => Veil.auth.openModal('login'));
+    return;
+  }
+  const list = store.get(CONFESSION_JOURNAL_KEY, []);
+  mount.innerHTML = `
+    <div class="panel">
+      <div class="grat-top">
+        <div class="streak"><span class="streak-num">${list.length}</span><span class="streak-label">개의 기록<br/>${escapeHtml(u.name || u.email.split('@')[0])}님</span></div>
+        <span class="grat-date">회개의 자리에서 남긴 일기</span>
+      </div>
+      ${list.length
+        ? `<div class="journal-list">${list.map((e, i) => `
+            <div class="journal-entry">
+              <div class="je-head"><span class="je-cat">${escapeHtml(e.category || '회개')}</span><span class="je-date">${escapeHtml(e.date || '')}</span></div>
+              <p class="je-text">${escapeHtml(e.confession || '')}</p>
+              ${e.verseRef ? `<div class="je-verse">받은 말씀 · ${escapeHtml(e.verseRef)}</div>` : ''}
+              <button class="je-del" data-i="${i}" title="삭제">✕</button>
+            </div>`).join('')}</div>`
+        : `<p class="empty-note">아직 저장된 회개 일기가 없어요. <a href="index.html#repent">회개의 자리</a>에서 마음을 적고 “일기에 저장”을 눌러 보세요.</p>`}
+    </div>`;
+  mount.querySelectorAll('.je-del').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.i; const l = store.get(CONFESSION_JOURNAL_KEY, []); l.splice(i, 1); store.set(CONFESSION_JOURNAL_KEY, l); renderJournal();
+  }));
 }
 
 /* ════════════  성경 책장  ════════════ */
@@ -491,6 +532,10 @@ function closeBook() { $('#book-backdrop').classList.remove('open'); $('#book-pa
 window.addEventListener('hashchange', route);
 document.addEventListener('DOMContentLoaded', () => {
   renderTier();
+  if (window.Veil && Veil.auth) {
+    Veil.auth.mountControl(document.getElementById('auth-slot'));
+    Veil.auth.onChange(() => { renderTier(); route(); });
+  }
   route();
   const demo = $('#demo-toggle');
   if (demo) demo.addEventListener('click', () => { tier.set(!tier.isPremium()); renderTier(); route(); });

@@ -152,13 +152,39 @@ function updateCount() {
 textarea?.addEventListener('input', updateCount);
 
 /* ─────────  SUBMIT & RESPONSE  ───────── */
-const loadingMessages = [
-  '말씀을 펼치고 있어요.',
-  '주님 앞에 그 마음을 가지고 갑니다.',
-  '적합한 본문을 찾고 있어요.',
-  '잠시 함께 침묵하십시다.',
-];
+/* 책장에서 해당 책을 뽑아 촤르륵 펼쳐 구절을 찾는 연출 (응답은 기기 안에서 즉시 준비됨) */
+const SHELF_HEIGHTS = [78, 104, 90, 120, 86, 112, 96, 128, 82, 116, 100];
+const SHELF_TARGET = 5;
+function bssDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function bssCaption(t) { const c = document.getElementById('bss-caption'); if (c) c.textContent = t; }
+async function runBookSearch(bookName, refText) {
+  const scene = document.getElementById('book-search');
+  if (!scene) { await bssDelay(1400); return; }
+  scene.classList.remove('target-on', 'to-book', 'flip', 'found');
+  const shelf = document.getElementById('bss-shelf');
+  if (shelf) shelf.innerHTML = SHELF_HEIGHTS.map((h, i) =>
+    `<div class="sp${i === SHELF_TARGET ? ' is-target' : ''}" style="height:${h}px">${i === SHELF_TARGET ? `<span class="sp-name">${bookName}</span>` : ''}</div>`).join('');
+  const flipper = document.getElementById('bss-flipper');
+  if (flipper) flipper.innerHTML = Array.from({ length: 7 }, () => '<div class="pg"></div>').join('');
+  const refEl = document.getElementById('bss-found-ref');
+  if (refEl) refEl.textContent = refText || '';
+  bssCaption('말씀의 자리를 찾고 있어요');
+  void scene.offsetWidth;                                   // reflow so transitions apply
+  await bssDelay(420);
+  scene.classList.add('target-on');
+  bssCaption(`${bookName} 말씀을 펼칩니다`);
+  await bssDelay(880);
+  scene.classList.add('to-book');
+  await bssDelay(540);
+  scene.classList.add('flip');
+  bssCaption('말씀을 한 장 한 장 넘깁니다');
+  await bssDelay(1200);
+  scene.classList.add('found');
+  bssCaption('말씀을 찾았습니다');
+  await bssDelay(760);
+}
 
+let lastResp = null, lastText = '';
 document.getElementById('submit-confession')?.addEventListener('click', async () => {
   const text = textarea.value.trim();
   if (!text) {
@@ -170,20 +196,16 @@ document.getElementById('submit-confession')?.addEventListener('click', async ()
 
   goTo(3);
 
-  // animate loading message
-  const msgEl = document.getElementById('loading-msg');
-  let mi = 0;
-  const msgTimer = setInterval(() => {
-    mi = (mi + 1) % loadingMessages.length;
-    if (msgEl) msgEl.textContent = loadingMessages[mi];
-  }, 1800);
+  const resp = buildResponse(text);
+  lastResp = resp; lastText = text;
+  const ref = (resp.verse && resp.verse.ref) ? resp.verse.ref : '말씀';
+  const book = ref.trim().split(/\s+/)[0] || '말씀';
 
-  // 거룩한 순간을 서두르지 않도록 잠시 머무릅니다 (응답은 기기 안에서 즉시 준비됨)
-  await new Promise(r => setTimeout(r, 2000));
-  clearInterval(msgTimer);
+  await runBookSearch(book, ref);
 
-  renderResponse(buildResponse(text));
+  renderResponse(resp);
   goTo(4);
+  updateJournalAcct();
 });
 
 function renderResponse(r) {
@@ -226,16 +248,28 @@ document.getElementById('btn-amen')?.addEventListener('click', () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-document.getElementById('btn-save')?.addEventListener('click', (e) => {
-  if (!tierState.isPremium()) {
-    e.preventDefault();
-    if (confirm('회개 일기는 동행 멤버십의 기능입니다.\n멤버십을 살펴보시겠습니까?')) {
-      document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-    }
-  } else {
-    // In a real app: POST to /api/journal
-    alert('회개 일기에 저장되었습니다.');
+document.getElementById('btn-save')?.addEventListener('click', () => {
+  const A = window.Veil && Veil.auth;
+  if (!A || !A.current()) {                        // 계정에 보관하려면 로그인
+    if (A) A.openModal('login');
+    return;
   }
+  if (!lastResp) return;
+  const now = new Date();
+  const date = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+  const journal = Veil.store.get('veil.confession.journal', []);
+  journal.unshift({
+    at: now.toISOString(), date,
+    category: lastResp.category || '회개',
+    verseRef: lastResp.verse ? lastResp.verse.ref : '',
+    confession: lastText,
+  });
+  Veil.store.set('veil.confession.journal', journal);
+  const btn = document.getElementById('btn-save');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '✓ 계정에 저장됨';
+  setTimeout(() => { btn.innerHTML = orig; }, 1900);
+  updateJournalAcct();
 });
 
 /* ─────────  PLAN BUTTONS (mock checkout)  ───────── */
@@ -348,3 +382,23 @@ document.querySelectorAll('.lang-opt').forEach(btn => {
     btn.classList.add('is-current');
   });
 });
+
+/* ─────────  ACCOUNT (login + 계정별 회개 일기 안내)  ───────── */
+function updateJournalAcct() {
+  const el = document.getElementById('journal-acct');
+  if (!el) return;
+  const u = (window.Veil && Veil.auth.current()) || null;
+  if (u) {
+    const n = (Veil.store.get('veil.confession.journal', []) || []).length;
+    el.textContent = `${u.name || u.email} 계정에 저장됩니다${n ? ` · 지금까지 ${n}개 보관 중` : ''}`;
+  } else {
+    el.textContent = '로그인하면 이 회개 일기를 내 계정에 보관할 수 있어요.';
+  }
+  el.hidden = false;
+}
+if (window.Veil && Veil.auth) {
+  Veil.auth.mountControl(document.getElementById('auth-slot'));
+  Veil.auth.mountControl(document.getElementById('auth-slot-m'));
+  Veil.auth.onChange(updateJournalAcct);
+  updateJournalAcct();
+}
