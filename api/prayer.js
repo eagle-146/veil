@@ -9,7 +9,8 @@
  * Production: verify subscription, rate-limit (e.g. 7/week), set a spend cap.
  */
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite';
+// gemini-2.0-flash-lite 는 2026-06-01 종료(deprecated)되어 사용 불가 → 2.5-flash-lite 로 교체.
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 const SYSTEM_PROMPT = `너는 개혁주의 신학에 기초한 한국어 기도문 작성자다. 사용자가 한 주간 적은 감사일기 항목들을 받아, 가정예배나 공예배에서 소리 내어 읽을 수 있는 "감사의 기도문"을 작성한다.
 

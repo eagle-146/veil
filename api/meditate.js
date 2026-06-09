@@ -13,7 +13,8 @@
  * Production: verify subscription, rate-limit, and set a spend cap.
  */
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite';
+// gemini-2.0-flash-lite 는 2026-06-01 종료(deprecated)되어 사용 불가 → 2.5-flash-lite 로 교체.
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 const SYSTEM_PROMPT = `너는 개혁주의 신학에 기초한 한국어 영성 지도자다. 너의 역할은 사용자가 적은 회개의 내용을 깊이 읽고, 사죄 선언이 아닌 "묵상의 마중물"을 제공하는 것이다.
 

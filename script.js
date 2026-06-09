@@ -17,42 +17,71 @@ const GENERAL = (window.CONFESSION_DATA && window.CONFESSION_DATA.general) || nu
 const CASES = (window.CONFESSION_CASES) || [];
 const CAT_BY_KEY = {};
 DATA.forEach(c => { CAT_BY_KEY[c.key] = c; });
+
+/* 보충 데이터셋 병합 — confession-extra*.js(단일 객체 CONFESSION_EXTRA + 누적 배열 CONFESSION_EXTRAS).
+   응답 회전 풀을 키워 반복감↓. 라우팅엔 영향 없음. 새 라운드는 파일만 추가하면 자동 병합. */
+{
+  const _exs = [];
+  if (window.CONFESSION_EXTRA) _exs.push(window.CONFESSION_EXTRA);
+  if (Array.isArray(window.CONFESSION_EXTRAS)) _exs.push(...window.CONFESSION_EXTRAS);
+  for (const ex of _exs) for (const cat of DATA) {
+    const e = ex[cat.key]; if (!e) continue;
+    for (const fld of ['verses', 'meditations', 'prayers', 'applications'])
+      if (Array.isArray(e[fld]) && Array.isArray(cat[fld])) cat[fld].push(...e[fld]);
+  }
+}
 function catLabel(key) { return CAT_BY_KEY[key] ? CAT_BY_KEY[key].label : '회개'; }
 function careForCat(key) { return CAT_BY_KEY[key] ? (CAT_BY_KEY[key].care || null) : null; }
 
-/* 키워드 가중 점수: 긴(구체적) 구가 짧은 단어보다 크게 기여 */
-function scoreKeywords(lower, keywords) {
-  let s = 0;
-  for (const kw of (keywords || [])) {
-    if (kw && lower.includes(kw.toLowerCase())) s += Math.max(2, kw.length);
-  }
-  return s;
+/* ── 의미 유사도 매칭: 글자 bigram 겹침 + 키워드 정밀 보정 ──
+   기존 키워드 substring 방식은 표현이 조금만 달라도 빗나가 GENERAL로 떨어졌다
+   (실측: 자유서술 고백의 약 87%가 일반/엉뚱 응답). bigram 유사도로 "의미가 가까운"
+   사례를 고르고, 키워드가 정확히 들어오면 가산해 정밀도를 높인다.
+   온디바이스 순수 JS → 비용 0, 고백이 기기 밖으로 나가지 않음(프라이버시 유지). */
+function _norm(s) { return (s || '').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''); }
+function _bigrams(s) {
+  const n = _norm(s); const set = new Set();
+  if (n.length === 1) set.add(n);
+  for (let i = 0; i < n.length - 1; i++) set.add(n.slice(i, i + 2));
+  return set;
 }
+function _overlap(a, b) { if (!a.size || !b.size) return 0; let c = 0; for (const x of a) if (b.has(x)) c++; return c / Math.min(a.size, b.size); }
+function _kwHits(lower, kws) { let h = 0; for (const k of (kws || [])) if (k && lower.includes(k.toLowerCase())) h++; return h; }
 
-/* 100개 사례 중 가장 구체적으로 일치하는 항목(임계점 이상)을 고른다. 없으면 null → 카테고리 폴백. */
+/* 사례·카테고리의 bigram을 1회 precompute (200사례 ≈ 즉시) */
+const CASE_BG = CASES.map(c => ({ c, bg: _bigrams((c.situation || '') + ' ' + (c.keywords || []).join(' ')) }));
+const CAT_BG = DATA.map(cat => ({ cat, bg: _bigrams((cat.label || '') + ' ' + (cat.keywords || []).join(' ')) }));
+
+function _catKw(k) { return (CAT_BY_KEY[k] && CAT_BY_KEY[k].keywords) || []; }
+
+/* 2단계 매칭(개발 자동화로 검증, tools/confession-eval.mjs):
+   ① 정제된 카테고리 키워드로 '유력 카테고리'를 먼저 판정
+   ② 전체 최고 사례를 찾되, 유력 카테고리와 다르면 그 카테고리 내 최고 사례로 교정
+   → 무관한 사례가 우연히 bigram 겹쳐 엉뚱하게 매칭되던 오라우팅을 해소. */
 function matchCase(text) {
-  if (!text || !CASES.length) return null;
-  const lower = text.toLowerCase();
-  let best = null, bestScore = 0;
-  for (const c of CASES) {
-    const s = scoreKeywords(lower, c.keywords);
-    if (s > bestScore) { bestScore = s; best = c; }
+  if (!text || !CASE_BG.length) return null;
+  const q = _bigrams(text), lower = text.toLowerCase();
+  let topCat = null, topCatScore = 0;
+  for (const { cat, bg } of CAT_BG) { const s = _overlap(q, bg) + _kwHits(lower, cat.keywords) * 0.12; if (s > topCatScore) { topCatScore = s; topCat = cat; } }
+  let best = null, bs = 0, bestIn = null, bsIn = 0;
+  for (const { c, bg } of CASE_BG) {
+    const s = _overlap(q, bg) + Math.min(0.20, _kwHits(lower, c.keywords) * 0.07) + Math.min(0.18, _kwHits(lower, _catKw(c.cat)) * 0.06);
+    if (s > bs) { bs = s; best = c; }
+    if (topCat && c.cat === topCat.key && s > bsIn) { bsIn = s; bestIn = c; }
   }
-  return bestScore >= 4 ? best : null;
+  if (topCat && topCatScore >= 0.16 && bestIn && best && best.cat !== topCat.key) return bestIn;
+  return bs >= 0.20 ? best : null;
 }
 
 function matchCategory(text) {
-  if (!text || !DATA.length) return GENERAL;
-  const lower = text.toLowerCase();
+  if (!text || !CAT_BG.length) return GENERAL;
+  const q = _bigrams(text), lower = text.toLowerCase();
   let best = null, bestScore = 0;
-  for (const cat of DATA) {
-    let score = 0;
-    for (const kw of (cat.keywords || [])) {
-      if (kw && lower.includes(kw.toLowerCase())) score += 1;
-    }
-    if (score > bestScore) { bestScore = score; best = cat; }
+  for (const { cat, bg } of CAT_BG) {
+    const s = _overlap(q, bg) + Math.min(0.20, _kwHits(lower, cat.keywords) * 0.07);
+    if (s > bestScore) { bestScore = s; best = cat; }
   }
-  return bestScore > 0 ? best : GENERAL;
+  return bestScore >= 0.12 ? best : GENERAL;
 }
 
 /* 같은 항목이 연속으로 반복되지 않도록 회전하며 무작위 선택 */
