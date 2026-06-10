@@ -48,8 +48,8 @@
         <button type="button" class="nav-top" aria-haspopup="true" aria-expanded="false">멤버십 <svg class="caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
         <div class="nav-menu">
           <a href="membership.html">요금제</a>
-          <a href="membership.html#offering">후원</a>
           <a href="testimony.html">후기</a>
+          <a href="membership.html#offering">후원</a>
         </div>
       </div>
     </nav>
@@ -159,12 +159,22 @@
       <div class="tc-row"><span class="tc-tool">성경 책장</span><span class="tc-col">읽기 기록 · 완독 색 표시</span><span class="tc-col tc-paid">통독 플랜 · 음성 낭독 · 하이라이트·메모</span></div>
     </div>
 
-    <div class="offering reveal">
+    <div class="offering reveal" id="offering">
       <div class="offering-text">
         <h4>후원으로 함께 세우기</h4>
-        <p>멤버십이 부담스럽거나, 이 일에 마음을 보태고 싶으시다면. 보내주신 후원은 Veil의 개발과 운영에 쓰이고, 그중 일부는 미자립교회와 선교지 사역에 보탭니다.</p>
+        <div class="offering-account" style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:14px 0 16px;padding:13px 16px;background:var(--bg-2);border:1px solid var(--line);border-radius:10px">
+          <span style="font-size:.8rem;font-weight:700;letter-spacing:.02em;color:var(--gold)">후원 계좌</span>
+          <strong style="font-size:1.06rem;letter-spacing:.03em">0000000</strong>
+          <span style="color:var(--ink-3)">예금주 홍길동</span>
+        </div>
+        <p>멤버십이 부담스럽거나, 이 일에 마음을 보태고 싶으시다면 위 계좌로 함께해 주세요. 보내주신 후원은 이렇게 쓰입니다.</p>
+        <ul style="margin:10px 0 0;padding-left:18px;line-height:1.95;color:var(--ink-2);font-size:.94rem">
+          <li>서비스 개발과 서버·운영 비용</li>
+          <li>개혁주의 신학 자문과 콘텐츠 검수</li>
+          <li>미자립교회·선교지 사역에 나눔 (후원금의 일부)</li>
+        </ul>
       </div>
-      <button class="btn btn-ghost">후원하기 →</button>
+      <a href="mailto:apps@junsang.kr?subject=Veil 후원하고 싶어요" class="btn btn-ghost">후원 문의 →</a>
     </div>
 
   </div>
