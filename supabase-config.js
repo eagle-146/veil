@@ -13,6 +13,6 @@
      4) 아래 url / anonKey 에 붙여넣고 저장(푸시하면 자동 배포)
    ─────────────────────────────────────────────── */
 window.VEIL_SUPABASE = {
-  url: '',        // 예: https://abcdefghijkl.supabase.co
-  anonKey: '',    // 예: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....  (anon public)
+  url: 'https://qfkiqjpzeygoypqkwvwz.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFma2lxanB6ZXlnb3lwcWt3dnd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODQyMzgsImV4cCI6MjA5NTY2MDIzOH0.GsF0REih2yvxNrQKnYucWm2tTeXMyABijh9qKbaXcoU',
 };

@@ -617,6 +617,85 @@ body.nav-open { overflow: hidden; }
   margin: 0;
 }
 
+/* ── response deck: 말씀·묵상 / 기도·적용 두 페이지로 분할 (PC·모바일 공통) ── */
+.response-deck {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  height: auto;                       /* JS가 활성 페이지 높이로 설정 */
+  transition: height .34s var(--easing);
+}
+.response-track {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;            /* 페이지를 같은 높이로 늘이지 않음 → 페이지별 실제 높이 유지 */
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.response-track::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.response-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.deck-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.deck-arrow {
+  flex: none;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: var(--white);
+  color: var(--ink-2);
+  font-size: 1.45rem; line-height: 1;
+  cursor: pointer;
+  transition: opacity .2s, background .2s, border-color .2s, color .2s;
+}
+.deck-arrow:disabled { opacity: .3; cursor: default; }
+.deck-arrow:not(:disabled):hover,
+.deck-arrow:not(:disabled):active {
+  background: var(--gold-soft); border-color: var(--gold); color: var(--ink);
+}
+.deck-dots { display: flex; align-items: center; gap: 8px; }
+.deck-dot {
+  appearance: none;
+  border: 1px solid var(--line-2);
+  background: var(--white);
+  color: var(--ink-3);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.deck-dot:hover { border-color: var(--gold); color: var(--ink); }
+.deck-dot.is-active {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
 .response-tier {
   padding: 14px 18px;
   border-radius: var(--r-sm);
@@ -1396,85 +1475,52 @@ body::after {
 .veil-tear.torn .gate-light { opacity: 1; transform: scale(1); }
 
 /* ───────────────────────────────────────────────
-   회개 응답 — 책장에서 책을 뽑아 펼쳐 구절을 찾는 애니메이션
+   회개 응답 — 찢어진 휘장 너머로 빛이 차오르며 말씀을 펼치는 연출
    ─────────────────────────────────────────────── */
 .book-search {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 30px; min-height: 300px; padding: 26px 0;
+  gap: 18px; min-height: 240px; padding: 26px 0;
 }
-/* 책장 */
-.bss-shelf {
-  display: flex; align-items: flex-end; gap: 6px; height: 132px;
-  transition: opacity .5s var(--easing), transform .5s var(--easing);
+.word-search {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
 }
-.book-search.to-book .bss-shelf { opacity: 0; transform: translateY(10px) scale(.95); pointer-events: none; }
-.bss-shelf .sp {
-  width: 17px; border-radius: 3px 3px 1px 1px;
-  background: rgba(204, 115, 81, .16); border: 1px solid rgba(204, 115, 81, .14);
-  position: relative; transition: transform .55s var(--easing), opacity .5s, background .5s, box-shadow .5s;
+/* 빛이 차오르는 무대: 글로우(뒤) + 휘장 마크(앞) */
+.ws-stage { position: relative; width: 150px; height: 124px; display: grid; place-items: center; }
+.ws-glow {
+  position: absolute; width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle, var(--gold-soft) 0%, rgba(201, 162, 107, .30) 36%, transparent 70%);
+  opacity: .3; transform: scale(.55);
+  transition: opacity 1s var(--easing), transform 1.1s var(--easing);
+  animation: ws-breathe 3.6s ease-in-out infinite;
 }
-.book-search.target-on .bss-shelf .sp:not(.is-target) { opacity: .42; }
-.bss-shelf .sp.is-target {
-  background: linear-gradient(180deg, var(--gold-2), var(--gold));
-  border-color: var(--gold-2); box-shadow: 0 8px 20px rgba(204, 115, 81, .42);
+@keyframes ws-breathe {
+  0%, 100% { filter: blur(2px) brightness(1); }
+  50%      { filter: blur(5px) brightness(1.14); }
 }
-.book-search.target-on .bss-shelf .sp.is-target { transform: translateY(-16px); }
-.bss-shelf .sp .sp-name {
-  position: absolute; inset: 0; writing-mode: vertical-rl;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .58rem; color: #fff; opacity: 0; transition: opacity .4s .15s;
-  letter-spacing: .06em; padding: 9px 0; white-space: nowrap; overflow: hidden;
+.book-search.open  .ws-glow { opacity: .92; transform: scale(1.2); }
+.book-search.found .ws-glow { opacity: 1;   transform: scale(1.06); }
+/* 휘장 마크 */
+.ws-veil {
+  position: relative; width: 62px; height: 62px; color: var(--gold);
+  opacity: .5; transform: translateY(3px) scale(.95);
+  filter: drop-shadow(0 6px 16px rgba(201, 162, 107, .35));
+  transition: opacity .9s var(--easing), transform 1s var(--easing), color .9s var(--easing);
 }
-.bss-shelf .sp.is-target .sp-name { opacity: 1; }
+.book-search.open  .ws-veil { opacity: 1; transform: translateY(0) scale(1); color: var(--gold-2); }
+.book-search.found .ws-veil { transform: translateY(-4px) scale(1.03); }
+/* 빛 속에 떠오르는 구절 */
+.ws-ref {
+  min-height: 1.4em;
+  font-family: var(--serif); font-weight: 600; font-size: 1.04rem;
+  color: var(--ink); letter-spacing: .02em;
+  opacity: 0; transform: translateY(12px);
+  transition: opacity .7s var(--easing), transform .8s var(--easing);
+}
+.book-search.found .ws-ref { opacity: 1; transform: translateY(0); }
 
-/* 펼쳐진 책 */
-.bss-book {
-  width: 300px; height: 198px; position: relative; perspective: 1600px;
-  opacity: 0; transform: scale(.92) translateY(8px);
-  transition: opacity .55s var(--easing) .12s, transform .55s var(--easing) .12s;
-}
-.book-search.to-book .bss-book { opacity: 1; transform: scale(1) translateY(0); }
-.bss-spread { position: absolute; inset: 0; display: flex; border-radius: 7px; overflow: hidden; box-shadow: 0 24px 54px rgba(24, 24, 24, .2); }
-.bss-page-l, .bss-page-r {
-  flex: 1; position: relative;
-  background:
-    repeating-linear-gradient(transparent 0 12px, rgba(24, 24, 24, .045) 12px 13px) 0 26px / 100% 100% no-repeat,
-    linear-gradient(160deg, #FCF8F0, #F1E9D8);
-}
-.bss-page-l { border-radius: 7px 0 0 7px; box-shadow: inset -16px 0 24px -12px rgba(24, 24, 24, .2); }
-.bss-page-r { border-radius: 0 7px 7px 0; box-shadow: inset 16px 0 24px -12px rgba(24, 24, 24, .2); }
-/* 넘어가는 페이지들 (촤르륵) — 책등(가운데)을 축으로 회전 */
-.bss-flipper { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; transform-style: preserve-3d; }
-.bss-flipper .pg {
-  position: absolute; inset: 0; transform-origin: left center; transform: rotateY(0deg);
-  backface-visibility: hidden; border-radius: 0 7px 7px 0;
-  background:
-    repeating-linear-gradient(transparent 0 12px, rgba(24, 24, 24, .045) 12px 13px) 0 26px / 100% 100% no-repeat,
-    linear-gradient(160deg, #FFFDF7, #F0E7D5);
-  box-shadow: -1px 0 3px rgba(24, 24, 24, .07);
-}
-.book-search.flip .bss-flipper .pg { animation: bss-riffle .52s var(--ease-in) forwards; }
-.book-search.flip .bss-flipper .pg:nth-child(1) { animation-delay: 0s; }
-.book-search.flip .bss-flipper .pg:nth-child(2) { animation-delay: .1s; }
-.book-search.flip .bss-flipper .pg:nth-child(3) { animation-delay: .2s; }
-.book-search.flip .bss-flipper .pg:nth-child(4) { animation-delay: .3s; }
-.book-search.flip .bss-flipper .pg:nth-child(5) { animation-delay: .4s; }
-.book-search.flip .bss-flipper .pg:nth-child(6) { animation-delay: .5s; }
-.book-search.flip .bss-flipper .pg:nth-child(7) { animation-delay: .6s; }
-@keyframes bss-riffle { to { transform: rotateY(-168deg); } }
-/* 찾은 구절 */
-.bss-found {
-  position: absolute; top: 0; right: 0; width: 50%; height: 100%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
-  padding: 0 14px; text-align: center;
-  opacity: 0; transform: scale(.95); transition: opacity .45s var(--easing), transform .45s var(--easing);
-}
-.book-search.found .bss-found { opacity: 1; transform: scale(1); }
-.bss-found .chk { width: 30px; height: 30px; color: var(--gold); }
-.bss-found .ref { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: 1.02rem; }
 .bss-caption { color: var(--ink-3); font-size: .96rem; min-height: 1.4em; transition: opacity .3s; text-align: center; }
 @media (prefers-reduced-motion: reduce) {
-  .bss-shelf, .bss-book, .bss-flipper .pg, .bss-found { transition: none !important; animation: none !important; }
+  .ws-glow, .ws-veil, .ws-ref { transition: none !important; animation: none !important; }
 }
 
 /* ───────────────────────────────────────────────
@@ -1507,6 +1553,39 @@ body::after {
 .vauth-switch button { background: none; border: none; color: var(--gold); font: inherit; cursor: pointer; text-decoration: underline; padding: 0; }
 .vauth-note { font-size: .76rem; color: var(--muted); margin: 14px 0 0; line-height: 1.5; }
 body.vauth-lock { overflow: hidden; }
+
+/* 소셜 로그인 버튼 (Google / Kakao) */
+.vauth-social { display: grid; gap: 10px; margin: 6px 0 4px; }
+.vauth-social .soc-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 11px 14px; border-radius: var(--r-sm);
+  font: inherit; font-size: .95rem; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--line-2); background: var(--white); color: var(--ink);
+  transition: box-shadow .15s var(--easing), filter .15s var(--easing), opacity .15s var(--easing);
+}
+.vauth-social .soc-btn:hover { box-shadow: var(--shadow-sm); }
+.vauth-social .soc-btn:active { filter: brightness(.97); }
+.vauth-social .soc-btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.soc-google { background: #fff; border-color: #DADCE0; color: #3C4043; }
+.soc-kakao { background: #FEE500; border-color: #FEE500; color: #191600; }
+.soc-btn .soc-ic { width: 18px; height: 18px; flex: none; display: inline-flex; }
+.vauth-or { position: relative; text-align: center; margin: 16px 0 8px; }
+.vauth-or::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--line); }
+.vauth-or span { position: relative; background: var(--bg); padding: 0 12px; font-size: .76rem; color: var(--muted); }
+
+/* 가입 동의(개인정보·약관) */
+.vauth-consent { text-align: left; margin: 2px 0 16px; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 14px; background: var(--white); }
+.vauth-consent[hidden] { display: none; }
+.vauth-consent label { display: flex; align-items: flex-start; gap: 9px; font-size: .84rem; color: var(--ink-2); cursor: pointer; line-height: 1.5; }
+.vauth-consent .vc-all { font-weight: 600; color: var(--ink); padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.vauth-consent .vc-item { margin-top: 8px; }
+.vauth-consent input[type="checkbox"] { margin: 3px 0 0; accent-color: var(--gold); width: 16px; height: 16px; flex: none; }
+.vauth-consent a { color: var(--gold); text-decoration: underline; }
+.vauth-consent b { color: var(--gold); font-weight: 600; }
+.vauth-consent b.opt { color: var(--ink-3); }
+.vauth-legal { text-align: left; font-size: .78rem; color: var(--muted); margin: 2px 0 14px; line-height: 1.55; }
+.vauth-legal[hidden] { display: none; }
+.vauth-legal a { color: var(--gold); text-decoration: underline; }
 
 .auth-slot { display: inline-flex; align-items: center; }
 .auth-chip { position: relative; }

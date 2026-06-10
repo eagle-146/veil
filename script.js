@@ -207,36 +207,24 @@ function updateCount() {
 textarea?.addEventListener('input', updateCount);
 
 /* ─────────  SUBMIT & RESPONSE  ───────── */
-/* 책장에서 해당 책을 뽑아 촤르륵 펼쳐 구절을 찾는 연출 (응답은 기기 안에서 즉시 준비됨) */
-const SHELF_HEIGHTS = [78, 104, 90, 120, 86, 112, 96, 128, 82, 116, 100];
-const SHELF_TARGET = 5;
+/* 찢어진 휘장 너머로 빛이 차오르며 말씀을 펼치는 연출 (응답은 기기 안에서 즉시 준비됨) */
 function bssDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
 function bssCaption(t) { const c = document.getElementById('bss-caption'); if (c) c.textContent = t; }
 async function runBookSearch(bookName, refText) {
   const scene = document.getElementById('book-search');
-  if (!scene) { await bssDelay(1400); return; }
-  scene.classList.remove('target-on', 'to-book', 'flip', 'found');
-  const shelf = document.getElementById('bss-shelf');
-  if (shelf) shelf.innerHTML = SHELF_HEIGHTS.map((h, i) =>
-    `<div class="sp${i === SHELF_TARGET ? ' is-target' : ''}" style="height:${h}px">${i === SHELF_TARGET ? `<span class="sp-name">${bookName}</span>` : ''}</div>`).join('');
-  const flipper = document.getElementById('bss-flipper');
-  if (flipper) flipper.innerHTML = Array.from({ length: 7 }, () => '<div class="pg"></div>').join('');
-  const refEl = document.getElementById('bss-found-ref');
+  if (!scene) { await bssDelay(1200); return; }
+  scene.classList.remove('open', 'found');
+  const refEl = document.getElementById('ws-ref');
   if (refEl) refEl.textContent = refText || '';
-  bssCaption('말씀의 자리를 찾고 있어요');
+  bssCaption('마음을 살피고 있어요');
   void scene.offsetWidth;                                   // reflow so transitions apply
-  await bssDelay(420);
-  scene.classList.add('target-on');
+  await bssDelay(560);
+  scene.classList.add('open');                             // 휘장 너머 빛이 차오름
   bssCaption(`${bookName} 말씀을 펼칩니다`);
-  await bssDelay(880);
-  scene.classList.add('to-book');
-  await bssDelay(540);
-  scene.classList.add('flip');
-  bssCaption('말씀을 한 장 한 장 넘깁니다');
-  await bssDelay(1200);
-  scene.classList.add('found');
+  await bssDelay(720);
+  scene.classList.add('found');                            // 빛 속에 구절이 떠오름
   bssCaption('말씀을 찾았습니다');
-  await bssDelay(760);
+  await bssDelay(540);
 }
 
 let lastResp = null, lastText = '';
@@ -311,6 +299,73 @@ function renderResponse(r) {
     if (r.care) { careEl.textContent = r.care; careEl.hidden = false; }
     else careEl.hidden = true;
   }
+
+  refreshResponseDeck();   // 첫 페이지(말씀·묵상)부터 보여주고 높이 재측정
+}
+
+/* ─────────  RESPONSE DECK — 말씀·묵상 / 기도·적용 페이지 슬라이드 (모바일 가독성)  ───────── */
+const rdeck = {
+  track: document.getElementById('response-track'),
+  box:   document.getElementById('response-deck'),
+  prev:  document.getElementById('deck-prev'),
+  next:  document.getElementById('deck-next'),
+  dots:  Array.from(document.querySelectorAll('#deck-dots .deck-dot')),
+  i: 0,
+};
+const rdeckSlides = () => (rdeck.track ? Array.from(rdeck.track.children) : []);
+
+function updateDeck() {
+  const slides = rdeckSlides();
+  if (!slides.length) return;
+  rdeck.i = Math.max(0, Math.min(slides.length - 1, rdeck.i));
+  rdeck.dots.forEach((d, k) => d.classList.toggle('is-active', k === rdeck.i));
+  if (rdeck.prev) rdeck.prev.disabled = rdeck.i <= 0;
+  if (rdeck.next) rdeck.next.disabled = rdeck.i >= slides.length - 1;
+  // 데크 높이를 현재 페이지에 맞춤 (PC·모바일 공통)
+  if (rdeck.box) rdeck.box.style.height = slides[rdeck.i].offsetHeight + 'px';
+}
+
+function goDeck(i, smooth = true) {
+  const slides = rdeckSlides();
+  if (!slides.length) return;
+  rdeck.i = Math.max(0, Math.min(slides.length - 1, i));
+  if (rdeck.track) rdeck.track.scrollTo({ left: rdeck.i * rdeck.track.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
+  updateDeck();
+}
+
+function refreshResponseDeck() {
+  if (!rdeck.track) return;
+  rdeck.i = 0;
+  rdeck.track.scrollTo({ left: 0, behavior: 'auto' });
+  // step 4가 display:none → block 으로 보이게 된 다음 프레임에 높이 측정
+  requestAnimationFrame(updateDeck);
+}
+
+if (rdeck.track) {
+  // 네이티브 스와이프 → 활성 페이지 동기화
+  let ticking = false;
+  rdeck.track.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const w = rdeck.track.clientWidth || 1;
+      const idx = Math.round(rdeck.track.scrollLeft / w);
+      if (idx !== rdeck.i) { rdeck.i = idx; updateDeck(); }
+    });
+  }, { passive: true });
+
+  // 클릭(화살표·점)으로 넘기기
+  rdeck.prev?.addEventListener('click', () => goDeck(rdeck.i - 1));
+  rdeck.next?.addEventListener('click', () => goDeck(rdeck.i + 1));
+  rdeck.dots.forEach((d) => d.addEventListener('click', () => goDeck(Number(d.dataset.i))));
+
+  // 회전/리사이즈 시 현재 페이지로 재정렬 + 높이 재측정
+  let rz;
+  window.addEventListener('resize', () => {
+    clearTimeout(rz);
+    rz = setTimeout(() => goDeck(rdeck.i, false), 120);
+  });
 }
 
 /* ─────────  RESPONSE ACTIONS  ───────── */

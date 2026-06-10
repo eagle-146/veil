@@ -75,6 +75,30 @@ window.VEIL_SUPABASE = {
 > anon(공개) 키는 클라이언트에 노출돼도 안전합니다. 데이터는 위 RLS가 보호합니다.
 > **service_role 키는 절대 여기에 넣지 마세요.**
 
+## 5) 소셜 로그인 켜기 (Google · Kakao)
+
+로그인 모달은 **Google·Kakao·이메일** 3가지를 제공합니다. 이메일은 위 설정만으로 바로 되고,
+소셜 2개는 각 제공자 앱을 만든 뒤 Supabase 대시보드에 연결해야 버튼이 동작합니다.
+(키가 비어 로컬 모드일 때는 소셜 버튼이 자동으로 숨겨지고 이메일 가입만 보입니다.)
+
+**공통 — Supabase 쪽 콜백 URL**
+- 콜백(redirect) 주소: `https://<프로젝트>.supabase.co/auth/v1/callback`
+- **Authentication → URL Configuration → Redirect URLs** 에 배포 주소(`https://veil-...vercel.app/**`)와
+  로컬 테스트 주소(`http://localhost:3000/**`)를 추가하세요.
+
+**Google**
+1. [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services → Credentials → OAuth client ID(웹)** 생성.
+2. *Authorized redirect URI* 에 위 Supabase 콜백 URL을 넣습니다.
+3. 발급된 **Client ID / Client Secret** 을 Supabase **Authentication → Sign In / Providers → Google** 에 붙여넣고 **Enable**.
+
+**Kakao** ([Supabase 가이드](https://supabase.com/docs/guides/auth/social-login/auth-kakao))
+1. [Kakao Developers](https://developers.kakao.com/) → 애플리케이션 추가 → **카카오 로그인 활성화**.
+2. **Redirect URI** 에 위 Supabase 콜백 URL 등록, **동의 항목**에서 닉네임·이메일을 사용 설정.
+3. **REST API 키**(Client ID)와 **Client Secret(보안 → 활성화)** 을 Supabase **Providers → Kakao** 에 붙여넣고 **Enable**.
+
+> 네이버는 Supabase 기본 제공 목록에 없어 현재 미포함입니다. 추후 필요하면 별도 서버리스
+> 브리지(OAuth 코드 교환 + service_role 로 세션 발급)로 추가할 수 있습니다.
+
 ---
 
 ## 동작 방식 / 프라이버시

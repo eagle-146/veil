@@ -3,10 +3,20 @@
    두 가지 모드를 지원합니다.
 
    • 클라우드 모드 : supabase-config.js 에 url/anonKey 가 채워져 있으면 켜짐.
-       Supabase Auth(이메일/비번) + Postgres(RLS)로 계정별 기기-간 동기화.
+       Supabase Auth(이메일/비번 + 소셜) + Postgres(RLS)로 계정별 기기-간 동기화.
        로컬은 캐시로 쓰고, store.set 시 백그라운드로 클라우드에 upsert,
        로그인 시 클라우드에서 내려받아 즉시 동기화.
    • 로컬 모드 : 키가 없으면 기존처럼 이 브라우저(localStorage)에만 계정/기록 저장.
+
+   로그인 방법(클라우드 모드):
+     1) Google   — Supabase 기본 OAuth (provider: 'google')
+     2) Kakao    — Supabase 기본 OAuth (provider: 'kakao')
+     3) 이메일/비밀번호 — 자체 회원가입/로그인
+   (네이버는 Supabase 기본 미지원이라 현재 미포함. 로컬 모드에선 소셜이 숨겨지고 이메일만.)
+
+   가입 시 개인정보 동의(이용약관·개인정보 수집·이용[필수], 마케팅[선택])를 받고,
+   동의 이력(veil.consent: 버전·시각)을 계정에 기록합니다. 소셜 가입은 리다이렉트
+   전에 veil.pendingConsent 로 보관했다가 복귀 후 계정에 기록합니다.
 
    회개 내용은 기본적으로 store 에 쓰지 않으므로 저장/전송되지 않습니다.
    사용자가 "일기에 저장"을 누를 때만 store.set → (클라우드 모드면) 계정에 보관.
@@ -26,6 +36,11 @@
 
   const listeners = [];
   function emit() { const u = auth.current(); listeners.forEach(cb => { try { cb(u); } catch {} }); renderAllControls(); }
+
+  /* ════════════ 동의(개인정보·약관) 상수 ════════════ */
+  const CONSENT_VERSION = '2026-06-11';
+  const CONSENT_KEY = 'veil.consent';
+  const PENDING_CONSENT_KEY = 'veil.pendingConsent';
 
   /* ════════════ 로컬 모드 계정 ════════════ */
   const ACCTS_KEY = 'veil.accounts', SESSION_KEY = 'veil.session';
@@ -61,6 +76,7 @@
       raw.set(SESSION_KEY, id); emit();
     },
     logout() { raw.del(SESSION_KEY); emit(); },
+    async oauth() { throw new Error('소셜 로그인은 클라우드(Supabase) 연결 후 사용할 수 있어요. 지금은 이메일로 가입해 주세요.'); },
   };
 
   /* ════════════ 클라우드 모드 (Supabase) ════════════ */
@@ -80,7 +96,8 @@
   function userFromSession(session) {
     if (!session || !session.user) return null;
     const u = session.user;
-    return { id: u.id, email: u.email, name: (u.user_metadata && u.user_metadata.name) || (u.email || '').split('@')[0] };
+    const meta = u.user_metadata || {};
+    return { id: u.id, email: u.email, name: meta.name || meta.full_name || meta.nickname || (u.email || '').split('@')[0] };
   }
   async function handleSession(session) {
     cloudUser = userFromSession(session);
@@ -89,6 +106,7 @@
       try { await pullAll(); } catch (e) { console.warn('[Veil] 동기화(pull) 실패:', e); }
     }
     if (!cloudUser) lastPulledId = null;
+    try { applyPendingConsent(); } catch (e) { console.warn('[Veil] 동의 기록 실패:', e); }
     emit();
   }
   async function pullAll() {
@@ -113,6 +131,7 @@
     if (/invalid login credentials/i.test(m)) return '이메일 또는 비밀번호가 올바르지 않습니다.';
     if (/email not confirmed/i.test(m)) return '이메일 인증이 필요합니다. 받은 메일의 링크를 눌러 주세요.';
     if (/password should be at least/i.test(m)) return '비밀번호는 6자 이상이어야 합니다.';
+    if (/provider is not enabled|Unsupported provider/i.test(m)) return '이 소셜 로그인은 아직 설정되지 않았습니다(관리자 설정 필요).';
     if (/rate limit|too many/i.test(m)) return '요청이 많습니다. 잠시 후 다시 시도해 주세요.';
     return m;
   }
@@ -133,6 +152,12 @@
       if (error) throw new Error(mapErr(error.message));
     },
     async logout() { try { await ensureCloud(); await sb.auth.signOut(); } catch (e) { console.warn(e); } },
+    async oauth(provider) {
+      await ensureCloud();
+      const redirectTo = location.origin + location.pathname;
+      const { error } = await sb.auth.signInWithOAuth({ provider, options: { redirectTo } });
+      if (error) throw new Error(mapErr(error.message));
+    },
   };
 
   const impl = CLOUD ? cloudAuth : localAuth;
@@ -142,7 +167,9 @@
     current() { return impl.current(); },
     signup(email, name, pw) { return impl.signup(email, name, pw); },
     login(email, pw) { return impl.login(email, pw); },
+    oauth(provider) { return impl.oauth(provider); },
     logout() { return impl.logout(); },
+    hasConsent() { return hasValidConsent(); },
     onChange(cb) { if (typeof cb === 'function') listeners.push(cb); },
   };
 
@@ -153,9 +180,40 @@
     del(k) { localStorage.removeItem(this._k(k)); if (CLOUD) delKey(k); },
   };
 
+  /* ════════════ 동의 기록 ════════════ */
+  function getConsent() { return store.get(CONSENT_KEY, null); }
+  function hasValidConsent() { const c = getConsent(); return !!(c && c.terms && c.privacy); }
+  // 로그인 직후 호출: 보류된(pending) 동의가 있으면 현재 계정에 기록한다(중복/기존 동의는 보존).
+  function applyPendingConsent() {
+    const u = auth.current(); if (!u) return;
+    if (hasValidConsent()) { raw.del(PENDING_CONSENT_KEY); return; }
+    const p = raw.get(PENDING_CONSENT_KEY, null); if (!p) return;
+    store.set(CONSENT_KEY, { version: p.version || CONSENT_VERSION, at: p.at || new Date().toISOString(), terms: true, privacy: true, marketing: !!p.marketing });
+    raw.del(PENDING_CONSENT_KEY);
+  }
+
   /* ════════════ 로그인 / 가입 모달 ════════════ */
   const GATE = 'M14 13 H50 a2.4 2.4 0 0 1 2.34 2.92 L49.3 49.1 A2.4 2.4 0 0 1 46.96 51 H42 a2 2 0 0 1 -1.95 -2.44 C41.6 42 33.9 24.6 32 21 C30.1 24.6 22.4 42 23.95 48.56 A2 2 0 0 1 22 51 H17.04 A2.4 2.4 0 0 1 14.7 49.1 L11.66 15.92 A2.4 2.4 0 0 1 14 13 Z';
+  const GOOGLE_IC = '<svg class="soc-ic" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.49h4.84a4.14 4.14 0 0 1-1.79 2.71v2.26h2.9c1.7-1.56 2.68-3.87 2.68-6.62Z"/><path fill="#34A853" d="M9 18c2.43 0 4.46-.8 5.95-2.18l-2.9-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.96 10.71a5.41 5.41 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33Z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.59A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58Z"/></svg>';
+  const KAKAO_IC = '<svg class="soc-ic" viewBox="0 0 18 18" aria-hidden="true"><path fill="#191600" d="M9 1.6C4.86 1.6 1.5 4.2 1.5 7.42c0 2.08 1.38 3.9 3.47 4.94-.15.54-.55 1.98-.63 2.29-.1.39.14.39.3.28.12-.08 1.98-1.34 2.78-1.89.35.05.7.08 1.06.08 4.14 0 7.5-2.6 7.5-5.82S13.14 1.6 9 1.6Z"/></svg>';
   let mode = 'login';
+
+  function consentRequired() { return mode === 'signup'; }
+  function consentOk() {
+    if (!consentRequired()) return true;
+    const t = document.getElementById('vc-terms'), p = document.getElementById('vc-privacy');
+    return !!(t && p && t.checked && p.checked);
+  }
+  function updateConsentState() {
+    const g = (id) => document.getElementById(id);
+    const all = g('vc-all'), t = g('vc-terms'), p = g('vc-privacy'), m = g('vc-marketing');
+    if (all && t && p && m) all.checked = t.checked && p.checked && m.checked;
+    const ok = consentOk();
+    const submit = g('vauth-submit'); if (submit) submit.disabled = !ok;
+    const social = g('vauth-social');
+    if (social) social.querySelectorAll('.soc-btn').forEach(b => { b.disabled = consentRequired() && !ok; });
+  }
+
   function ensureModal() {
     if (document.getElementById('vauth')) return;
     const wrap = document.createElement('div');
@@ -167,10 +225,23 @@
         <span class="vauth-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="currentColor"><path d="${GATE}"/></svg></span>
         <h3 id="vauth-title">로그인</h3>
         <p class="vauth-sub" id="vauth-sub">기록을 계정에 안전하게 보관하세요.</p>
+        ${CLOUD ? `
+        <div class="vauth-social" id="vauth-social">
+          <button type="button" class="soc-btn soc-google" data-provider="google">${GOOGLE_IC}<span>Google로 계속하기</span></button>
+          <button type="button" class="soc-btn soc-kakao" data-provider="kakao">${KAKAO_IC}<span>카카오로 계속하기</span></button>
+          <div class="vauth-or"><span>또는 이메일로</span></div>
+        </div>` : ''}
         <form id="vauth-form" novalidate>
           <div class="vauth-field" id="vauth-name-wrap"><label for="vauth-name">이름</label><input type="text" id="vauth-name" autocomplete="name" placeholder="표시될 이름" /></div>
           <div class="vauth-field"><label for="vauth-email">이메일</label><input type="email" id="vauth-email" autocomplete="email" placeholder="you@example.com" /></div>
           <div class="vauth-field"><label for="vauth-pw">비밀번호</label><input type="password" id="vauth-pw" autocomplete="current-password" placeholder="6자 이상" /></div>
+          <div class="vauth-consent" id="vauth-consent" hidden>
+            <label class="vc-all"><input type="checkbox" id="vc-all" /><span>전체 동의</span></label>
+            <label class="vc-item"><input type="checkbox" id="vc-terms" /><span><b>[필수]</b> <a href="policy.html#terms" target="_blank" rel="noopener">이용약관</a>에 동의합니다.</span></label>
+            <label class="vc-item"><input type="checkbox" id="vc-privacy" /><span><b>[필수]</b> <a href="policy.html#privacy" target="_blank" rel="noopener">개인정보 수집·이용</a>에 동의합니다.</span></label>
+            <label class="vc-item"><input type="checkbox" id="vc-marketing" /><span><b class="opt">[선택]</b> 마케팅·이벤트 정보 수신에 동의합니다.</span></label>
+          </div>
+          <p class="vauth-legal" id="vauth-legal">로그인 시 <a href="policy.html#terms" target="_blank" rel="noopener">이용약관</a>과 <a href="policy.html#privacy" target="_blank" rel="noopener">개인정보처리방침</a>에 동의한 것으로 간주됩니다.</p>
           <p class="vauth-err" id="vauth-err" hidden></p>
           <button class="btn btn-gold btn-block" type="submit" id="vauth-submit">로그인</button>
         </form>
@@ -183,6 +254,11 @@
     g('vauth-x').addEventListener('click', closeModal);
     g('vauth-switch').addEventListener('click', (e) => { if (e.target.closest('#vauth-switch-btn')) setMode(mode === 'login' ? 'signup' : 'login'); });
     g('vauth-form').addEventListener('submit', onSubmit);
+    const social = g('vauth-social');
+    if (social) social.querySelectorAll('.soc-btn').forEach(b => b.addEventListener('click', () => onSocial(b.dataset.provider)));
+    const all = g('vc-all');
+    if (all) all.addEventListener('change', () => { ['vc-terms', 'vc-privacy', 'vc-marketing'].forEach(id => { const el = g(id); if (el) el.checked = all.checked; }); updateConsentState(); });
+    ['vc-terms', 'vc-privacy', 'vc-marketing'].forEach(id => { const el = g(id); if (el) el.addEventListener('change', updateConsentState); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   }
   function setMode(m) {
@@ -192,20 +268,42 @@
     g('vauth-name-wrap').style.display = signup ? '' : 'none';
     g('vauth-pw').setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
     g('vauth-submit').textContent = signup ? '가입하고 시작하기' : '로그인';
+    const consent = g('vauth-consent'), legal = g('vauth-legal');
+    if (consent) consent.hidden = !signup;
+    if (legal) legal.hidden = signup;
     g('vauth-switch').innerHTML = signup
       ? '이미 계정이 있으신가요? <button type="button" id="vauth-switch-btn">로그인</button>'
       : '계정이 없으신가요? <button type="button" id="vauth-switch-btn">가입하기</button>';
     const err = g('vauth-err'); err.hidden = true; err.textContent = '';
+    updateConsentState();
+  }
+  function onSocial(provider) {
+    const g = (id) => document.getElementById(id);
+    const err = g('vauth-err'); err.hidden = true;
+    if (!consentOk()) { err.textContent = '필수 약관에 동의해 주세요.'; err.hidden = false; return; }
+    const marketing = !!(consentRequired() && g('vc-marketing') && g('vc-marketing').checked);
+    try { raw.set(PENDING_CONSENT_KEY, { version: CONSENT_VERSION, at: new Date().toISOString(), marketing }); } catch {}
+    Promise.resolve(auth.oauth(provider)).catch(ex => {
+      try { raw.del(PENDING_CONSENT_KEY); } catch {}
+      err.textContent = (ex && ex.message) || '소셜 로그인에 실패했습니다.'; err.hidden = false;
+    });
   }
   async function onSubmit(e) {
     e.preventDefault(); const g = (id) => document.getElementById(id);
     const err = g('vauth-err'); err.hidden = true;
     const email = g('vauth-email').value, pw = g('vauth-pw').value, name = g('vauth-name').value;
+    if (mode === 'signup' && !consentOk()) { err.textContent = '필수 약관에 동의해 주세요.'; err.hidden = false; return; }
     const submit = g('vauth-submit'); const label = submit.textContent;
     submit.disabled = true; submit.textContent = '처리 중…';
     try {
-      if (mode === 'signup') await auth.signup(email, name, pw);
-      else await auth.login(email, pw);
+      if (mode === 'signup') {
+        const marketing = !!(g('vc-marketing') && g('vc-marketing').checked);
+        try { raw.set(PENDING_CONSENT_KEY, { version: CONSENT_VERSION, at: new Date().toISOString(), marketing }); } catch {}
+        await auth.signup(email, name, pw);
+        applyPendingConsent();   // 세션이 있으면(로컬/즉시가입) 바로 기록, 없으면 다음 로그인 시 기록
+      } else {
+        await auth.login(email, pw);
+      }
       closeModal();
     } catch (ex) {
       err.textContent = ex.message || '문제가 발생했습니다.'; err.hidden = false;

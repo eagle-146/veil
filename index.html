@@ -56,8 +56,8 @@
         <button type="button" class="nav-top" aria-haspopup="true" aria-expanded="false">멤버십 <svg class="caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
         <div class="nav-menu">
           <a href="membership.html">요금제</a>
-          <a href="membership.html#offering">후원</a>
           <a href="testimony.html">후기</a>
+          <a href="membership.html#offering">후원</a>
         </div>
       </div>
     </nav>
@@ -145,17 +145,12 @@
           <span class="step-name">말씀 응답</span>
         </div>
         <div class="book-search" id="book-search" aria-live="polite">
-          <div class="bss-shelf" id="bss-shelf" aria-hidden="true"></div>
-          <div class="bss-book" aria-hidden="true">
-            <div class="bss-spread">
-              <div class="bss-page-l"></div>
-              <div class="bss-page-r"></div>
-              <div class="bss-flipper" id="bss-flipper"></div>
-              <div class="bss-found">
-                <svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 6.5"/></svg>
-                <span class="ref" id="bss-found-ref">—</span>
-              </div>
+          <div class="word-search" aria-hidden="true">
+            <div class="ws-stage">
+              <span class="ws-glow"></span>
+              <svg class="ws-veil" viewBox="0 0 64 64" fill="currentColor"><path d="M14 13 H50 a2.4 2.4 0 0 1 2.34 2.92 L49.3 49.1 A2.4 2.4 0 0 1 46.96 51 H42 a2 2 0 0 1 -1.95 -2.44 C41.6 42 33.9 24.6 32 21 C30.1 24.6 22.4 42 23.95 48.56 A2 2 0 0 1 22 51 H17.04 A2.4 2.4 0 0 1 14.7 49.1 L11.66 15.92 A2.4 2.4 0 0 1 14 13 Z"/></svg>
             </div>
+            <span class="ws-ref" id="ws-ref">—</span>
           </div>
           <p class="bss-caption" id="bss-caption">마음을 살피고 있어요</p>
         </div>
@@ -169,37 +164,58 @@
         </div>
 
         <div class="response">
-          <div class="response-block response-word">
-            <span class="block-label">
-              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.8 5.2 7.3 4.9 4.5 5.4v12.2c2.8-.5 5.3-.2 7.5 1.1 2.2-1.3 4.7-1.6 7.5-1.1V5.4C16.7 4.9 14.2 5.2 12 6.5Z"/><path d="M12 6.5V19"/></svg>
-              말씀
-            </span>
-            <blockquote id="resp-verse-text">—</blockquote>
-            <cite id="resp-verse-ref">—</cite>
+          <!-- 모바일 가독성: 말씀·묵상 → (슬라이드/클릭) → 기도·적용 으로 페이지 분할 -->
+          <div class="response-deck" id="response-deck">
+            <div class="response-track" id="response-track">
+
+              <div class="response-slide" data-slide="0">
+                <div class="response-block response-word">
+                  <span class="block-label">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.8 5.2 7.3 4.9 4.5 5.4v12.2c2.8-.5 5.3-.2 7.5 1.1 2.2-1.3 4.7-1.6 7.5-1.1V5.4C16.7 4.9 14.2 5.2 12 6.5Z"/><path d="M12 6.5V19"/></svg>
+                    말씀
+                  </span>
+                  <blockquote id="resp-verse-text">—</blockquote>
+                  <cite id="resp-verse-ref">—</cite>
+                </div>
+
+                <div class="response-block response-meditation">
+                  <span class="block-label">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5c2.6 3.1 4.6 5.4 4.6 8.8a4.6 4.6 0 1 1-9.2 0C7.4 8.9 9.4 6.6 12 3.5Z"/></svg>
+                    묵상
+                  </span>
+                  <p id="resp-meditation">—</p>
+                </div>
+              </div>
+
+              <div class="response-slide" data-slide="1">
+                <div class="response-block response-prayer">
+                  <span class="block-label">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5C10.4 7.6 8 10 6.6 13c-.8 1.7-.2 3.6 1.5 4.4L12 19.5"/><path d="M12 4.5C13.6 7.6 16 10 17.4 13c.8 1.7.2 3.6-1.5 4.4L12 19.5"/></svg>
+                    기도
+                  </span>
+                  <p id="resp-prayer">—</p>
+                </div>
+
+                <div class="response-block response-apply" id="resp-apply-block" hidden>
+                  <span class="block-label">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 6.5"/></svg>
+                    오늘의 적용
+                  </span>
+                  <p id="resp-application">—</p>
+                </div>
+              </div>
+
+            </div>
           </div>
 
-          <div class="response-block response-meditation">
-            <span class="block-label">
-              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5c2.6 3.1 4.6 5.4 4.6 8.8a4.6 4.6 0 1 1-9.2 0C7.4 8.9 9.4 6.6 12 3.5Z"/></svg>
-              묵상
-            </span>
-            <p id="resp-meditation">—</p>
-          </div>
-
-          <div class="response-block response-prayer">
-            <span class="block-label">
-              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5C10.4 7.6 8 10 6.6 13c-.8 1.7-.2 3.6 1.5 4.4L12 19.5"/><path d="M12 4.5C13.6 7.6 16 10 17.4 13c.8 1.7.2 3.6-1.5 4.4L12 19.5"/></svg>
-              기도
-            </span>
-            <p id="resp-prayer">—</p>
-          </div>
-
-          <div class="response-block response-apply" id="resp-apply-block" hidden>
-            <span class="block-label">
-              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 6.5"/></svg>
-              오늘의 적용
-            </span>
-            <p id="resp-application">—</p>
+          <!-- 페이지 네비게이션 (모바일에서만 표시) -->
+          <div class="deck-nav" id="deck-nav">
+            <button type="button" class="deck-arrow" id="deck-prev" aria-label="이전 페이지" disabled>‹</button>
+            <div class="deck-dots" id="deck-dots" role="tablist">
+              <button type="button" class="deck-dot is-active" data-i="0">말씀·묵상</button>
+              <button type="button" class="deck-dot" data-i="1">기도·적용</button>
+            </div>
+            <button type="button" class="deck-arrow" id="deck-next" aria-label="다음 페이지">›</button>
           </div>
 
           <div class="response-tier" id="tier-banner">
@@ -257,6 +273,14 @@
 
 <!-- ─────────────────────────  FOOTER  ───────────────────────── -->
 <footer class="footer">
+  <div class="footer-support" style="border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:30px">
+    <div class="container" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:20px 0">
+      <strong style="color:#fff;font-size:.98rem;letter-spacing:.01em">후원으로 함께 세우기</strong>
+      <span style="color:rgba(255,255,255,.88)">후원 계좌 <b style="letter-spacing:.04em">0000000</b> · 예금주 홍길동</span>
+      <span style="color:rgba(255,255,255,.5);font-size:.85rem">개발·운영과 미자립교회·선교지 사역에 쓰입니다</span>
+      <a href="mailto:apps@junsang.kr?subject=Veil 후원하고 싶어요" style="color:var(--gold-2);font-size:.88rem;margin-left:auto;white-space:nowrap">후원 문의 →</a>
+    </div>
+  </div>
   <div class="container footer-inner">
     <div class="footer-brand">
       <span class="brand-mark" aria-hidden="true">
@@ -282,7 +306,8 @@
         <h5>문의</h5>
         <a href="mailto:apps@junsang.kr">apps@junsang.kr</a>
         <a href="#">신학 자문단</a>
-        <a href="#">사역 후원</a>
+        <a href="testimony.html">후기</a>
+        <a href="membership.html#offering">사역 후원</a>
       </div>
     </div>
   </div>
