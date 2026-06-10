@@ -1621,3 +1621,52 @@ body.vauth-lock { overflow: hidden; }
 }
 .tool-head .kicker::before { content: ''; width: 24px; height: 1px; background: var(--line-2); flex: none; }
 .tool-head h1 { font-family: var(--serif); letter-spacing: -.02em; font-size: clamp(2.2rem, 4vw, 3.4rem); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DESIGN REFRESH · 2026-06-10  — palette UNCHANGED; only rhythm/depth/motion.
+   (Layered as overrides so it's reviewable & easy to revert as one block.)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── P1 · bridge the scripture interstitial into the 회개 section ──
+   Was ~248px of dead air (scripture-band bottom + repent top, both full
+   section padding). Tighten so the verse leads INTO the section. */
+.scripture-band { padding: var(--space-section) 0 clamp(36px, 5vw, 56px); }
+.repent { padding: clamp(60px, 8vw, 92px) 0 120px; }
+
+/* ── P2 · editorial rhythm — break the 6× identical centered cadence ──
+   Left-anchor a couple of section intros so they play against the
+   centered ones (and the already-asymmetric brand story). */
+.section-head--start { text-align: left; margin-left: 0; margin-right: auto; max-width: 760px; }
+.section-head--start .kicker { justify-content: flex-start; }
+
+/* ── P2 · separate the CTA 'altar' band from the footer plane ──
+   Both were #181818 and merged into one dark mass. Lift the CTA above
+   the footer with a stronger gold seam + a soft inset top shadow. */
+.footer { box-shadow: inset 0 16px 36px -26px rgba(0,0,0,.7); }
+.footer::before { opacity: .72; height: 2px; }
+
+/* ── P3 · hero depth — faint tone-on-tone light behind the wordmark ──
+   Adds dimension to the empty centre band without touching the palette. */
+.hero-ed::after {
+  content: ''; position: absolute; z-index: 0; pointer-events: none;
+  left: 50%; top: 47%; transform: translate(-50%, -50%);
+  width: min(118vw, 1080px); height: min(78vh, 600px);
+  background: radial-gradient(ellipse at center, rgba(238, 223, 194, .5), transparent 66%);
+}
+.hero-ed > * { position: relative; z-index: 1; }
+
+/* ── P3 · micro-interactions — a little more life on hover ── */
+.feature-icon { transition: border-color var(--dur-micro) var(--easing), color var(--dur-micro) var(--easing), transform var(--dur-micro) var(--easing); }
+.feature-link:hover .feature-icon { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+.plan { transition: transform .3s var(--easing), box-shadow .3s var(--easing); }
+.plan:hover { box-shadow: var(--shadow-md); }
+.footer-cols a { position: relative; display: inline-block; }
+.footer-cols a::after {
+  content: ''; position: absolute; left: 0; bottom: 2px; height: 1px; width: 100%;
+  background: var(--gold-2); transform: scaleX(0); transform-origin: left;
+  transition: transform var(--dur-micro) var(--easing);
+}
+.footer-cols a:hover::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) {
+  .hero-ed::after { display: none; }
+}

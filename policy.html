@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>약관 및 개인정보처리방침 — Veil</title>
+  <meta name="description" content="Veil의 이용약관, 개인정보처리방침, 환불 정책." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;600&display=swap" />
+  <style>
+    :root { --bg:#FBF9F4; --bg2:#F3EEE3; --ink:#2B2722; --ink2:#5C564C; --ink3:#8A8170; --gold:#B08D4F; --line:#E6DECF; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink2); font-family:'Noto Sans KR',system-ui,sans-serif; line-height:1.8; font-size:15px; }
+    .wrap { max-width:760px; margin:0 auto; padding:48px 22px 96px; }
+    a { color:var(--gold); }
+    .home { display:inline-flex; align-items:center; gap:6px; font-size:.85rem; color:var(--ink3); text-decoration:none; margin-bottom:28px; }
+    h1 { font-family:'Noto Serif KR',serif; color:var(--ink); font-size:1.7rem; margin:0 0 6px; }
+    h2 { font-family:'Noto Serif KR',serif; color:var(--ink); font-size:1.25rem; margin:52px 0 14px; padding-top:18px; border-top:1px solid var(--line); }
+    h3 { color:var(--ink); font-size:1rem; margin:26px 0 8px; }
+    p, li { color:var(--ink2); }
+    ul { padding-left:20px; } li { margin:5px 0; }
+    .meta { color:var(--ink3); font-size:.85rem; margin:0 0 22px; }
+    .note { background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 18px; font-size:.86rem; color:var(--ink2); margin:18px 0 30px; }
+    .toc { display:flex; gap:14px; flex-wrap:wrap; font-size:.9rem; margin:8px 0 0; }
+    strong { color:var(--ink); }
+    footer { margin-top:60px; padding-top:20px; border-top:1px solid var(--line); font-size:.82rem; color:var(--ink3); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="home" href="index.html">← Veil 홈으로</a>
+    <h1>약관 및 개인정보 안내</h1>
+    <p class="meta">시행일: 정식 출시 시 확정 · 문의: <a href="mailto:apps@junsang.kr">apps@junsang.kr</a></p>
+    <div class="note">본 문서는 베타(파일럿) 단계의 초안입니다. 정식 서비스 개시 및 유료 결제 도입 전, 법률 전문가의 검토를 거쳐 확정됩니다.</div>
+    <div class="toc"><a href="#privacy">개인정보처리방침</a><a href="#terms">이용약관</a><a href="#refund">환불 정책</a></div>
+
+    <h2 id="privacy">개인정보처리방침</h2>
+    <p>Veil(이하 "서비스")은 이용자의 프라이버시를 핵심 가치로 둡니다. 특히 <strong>회개 입력은 기본적으로 이용자의 기기(브라우저) 안에만 저장되며 서버로 전송되지 않습니다.</strong></p>
+
+    <h3>1. 수집·처리하는 정보와 시점</h3>
+    <ul>
+      <li><strong>회개 입력</strong> — 기본적으로 기기(localStorage)에만 보관되고 서버로 전송되지 않습니다. 응답(말씀·묵상·기도)은 기기 안에서 만들어집니다.</li>
+      <li><strong>회개 일기</strong> — 이용자가 <em>로그인 후 '일기에 저장'을 누른 경우에만</em>, 해당 회개 기록(작성 내용·날짜·연결된 말씀)이 계정에 보관됩니다.</li>
+      <li><strong>감사일기</strong> — 기기에 저장되며, 로그인 시 계정에 동기화될 수 있습니다.</li>
+      <li><strong>계정 정보</strong> — 로그인 시 이메일 등 인증에 필요한 최소 정보.</li>
+      <li><strong>프리미엄 AI 묵상·기도문(선택)</strong> — 이용자가 <em>직접 버튼을 눌러 동의한 경우에만</em>, 해당 입력이 AI 처리를 위해 외부 AI 서비스로 전송됩니다(아래 4항).</li>
+    </ul>
+    <p>서비스는 별도의 행동 추적·광고 목적 분석 도구를 사용하지 않습니다.</p>
+
+    <h3>2. 이용 목적</h3>
+    <p>회개·묵상·감사 기능 제공, 로그인한 기기 간 기록 동기화, 문의 응대.</p>
+
+    <h3>3. 보관 및 파기</h3>
+    <p>기기에 저장된 정보는 이용자가 브라우저에서 직접 삭제할 수 있습니다. 계정에 보관된 기록은 계정 삭제 또는 삭제 요청 시 지체 없이 파기합니다.</p>
+
+    <h3>4. 처리위탁 및 제3자</h3>
+    <ul>
+      <li><strong>Google(Gemini AI)</strong> — 프리미엄 AI 묵상·기도문 생성에 동의한 경우에 한해 해당 입력이 전송됩니다. 서비스는 입력이 모델 학습에 사용되지 않는 유료(결제) 등급으로 운용합니다.</li>
+      <li><strong>Supabase</strong> — 계정 인증 및 로그인 시 기록 동기화·보관.</li>
+      <li><strong>Google Fonts</strong> — 글꼴 로딩 과정에서 이용자의 IP 등 접속 정보가 전달될 수 있습니다.</li>
+      <li><strong>Vercel</strong> — 웹사이트 호스팅.</li>
+    </ul>
+
+    <h3>5. 이용자의 권리</h3>
+    <p>이용자는 자신의 개인정보에 대한 열람·정정·삭제·처리정지 및 동의 철회를 요청할 수 있습니다. 요청은 <a href="mailto:apps@junsang.kr">apps@junsang.kr</a>로 접수해 주세요.</p>
+
+    <h3>6. 안전조치 및 책임자</h3>
+    <p>서비스는 전송 구간 암호화(HTTPS) 등 합리적인 보호조치를 적용합니다. 개인정보 관련 문의·책임: <a href="mailto:apps@junsang.kr">apps@junsang.kr</a>.</p>
+
+    <h2 id="terms">이용약관</h2>
+    <h3>1. 서비스의 성격</h3>
+    <p>Veil은 개혁주의 신앙에 기초한 <strong>회개·묵상·감사를 돕는 영적 보조 도구</strong>입니다. 서비스가 제공하는 응답은 묵상의 마중물이며, <strong>죄 사함의 선언이나 면죄가 아닙니다.</strong> 죄 사함의 권세는 오직 하나님께 있습니다.</p>
+    <h3>2. 전문 상담의 대체 불가</h3>
+    <p>본 서비스는 의료·정신건강·법률 등 전문 상담이나 목회적 돌봄을 대체하지 않습니다. <strong>자살·자해·학대 등 위기 상황에서는 즉시 전문기관(자살예방 상담전화 ☎109, 정신건강 위기상담 ☎1577-0199, 긴급 시 ☎119)에 도움을 요청하시기 바랍니다.</strong></p>
+    <h3>3. 계정과 이용자의 의무</h3>
+    <p>이용자는 본인 계정 정보를 안전하게 관리하며, 타인의 권리를 침해하거나 서비스를 부정하게 이용하지 않습니다.</p>
+    <h3>4. 면책</h3>
+    <p>서비스는 신앙적 보조를 목적으로 제공되며, 제공된 내용의 활용 결과에 대해 법적 책임을 지지 않습니다. 천재지변·외부 서비스 장애 등 통제 불가한 사유로 인한 중단에 대해 책임이 제한됩니다.</p>
+    <h3>5. 유료 멤버십</h3>
+    <p>유료 멤버십(동행·가정)은 추후 도입 예정이며, 도입 시 요금·결제·해지 조건을 별도로 고지합니다.</p>
+    <h3>6. 준거법</h3>
+    <p>본 약관은 대한민국 법령에 따릅니다.</p>
+
+    <h2 id="refund">환불 정책</h2>
+    <p>현재 Veil의 회개·묵상 기능은 <strong>무료</strong>로 제공되어 결제가 발생하지 않습니다. 유료 멤버십 도입 이후에는 「전자상거래 등에서의 소비자보호에 관한 법률」 등 관련 법령에 따라 청약철회 및 환불을 처리하며, 구체적 기준을 결제 페이지에 명시합니다. 환불 문의: <a href="mailto:apps@junsang.kr">apps@junsang.kr</a>.</p>
+
+    <footer>© Veil · 마태복음 6:6의 골방. 본 페이지는 베타 단계 초안이며 정식 출시 시 갱신됩니다.</footer>
+  </div>
+</body>
+</html>

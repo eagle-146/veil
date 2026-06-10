@@ -1,0 +1,9 @@
+# 공개 배포에서 제외할 개발/QA 아티팩트 (저장소엔 남고 배포만 안 됨)
+# ⚠ seed_grat.html 은 사용자 감사일기를 가짜 샘플로 덮어써 데이터 소실 위험 → 반드시 제외
+seed_grat.html
+logos.html
+logos/
+tools/
+.playwright-mcp/
+*.md
+.claude/
