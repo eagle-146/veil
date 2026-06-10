@@ -356,9 +356,9 @@ body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
 .gr2-world { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
 .gr2-ring, .gr2-months { position: absolute; inset: 0; transform-style: preserve-3d; }
 .gr2-card {
-  position: absolute; left: 50%; top: 50%; width: 62px; height: 94px; padding: 0; border: 0; border-radius: 8px;
+  position: absolute; left: 50%; top: 50%; width: 152px; height: 58px; padding: 0; border: 0; border-radius: 9px;
   background-color: #ECE6DA; background-size: cover; background-position: center;
-  box-shadow: 0 2px 6px rgba(40, 34, 24, .12); cursor: pointer; will-change: transform, opacity; transform-origin: 50% 50%;
+  box-shadow: 0 2px 8px rgba(40, 34, 24, .14); cursor: pointer; will-change: transform, opacity; transform-origin: 50% 50%;
 }
 .gr2-card.on { box-shadow: 0 2px 6px rgba(40, 34, 24, .16); }
 .gr2-card:not(.on) { background: #EFEAE0; }

@@ -170,7 +170,7 @@ let gratFocusIdx = -1;     // 현재 포커스된 정수 인덱스
 let gratDates = [];
 let gratYear = null, gratMonth = null;   // 현재 보고 있는 달 (월 단위 원)
 let gratRX = 360, gratRY = 200;          // 화면 폭에 맞춰 동적으로 계산
-const GR_BEND = 0.64;
+const GR_BEND = 0.30;   // 가로형 카드가 너무 비틀리지 않게 회전 완화
 let gratHoverIdx = -1, gratPop = 0;      // 마우스 올린 카드의 팝(아이폰 햅틱) 정도
 let gratTiltX = 0, gratTiltY = 0;        // 원 전체의 기우뚱(중심 고정)
 let commitGratEditor = null;             // 현재 편집 중인 날의 미저장 감사를 조용히 보존(이탈 시 자동 저장)
@@ -262,7 +262,8 @@ function layoutRing() {
     const nf = (1 + co) / 2;                  // 1 = 앞(아래·포커스), 0 = 뒤(위·멀어짐)
     const x = Math.sin(ar) * gratRX, y = co * gratRY;
     const rot = ar * 180 / Math.PI * GR_BEND;
-    let sx = (0.86 + nf * 0.18) * GSF, sy = (0.60 + nf * 0.52) * GSF;
+    const ds = (0.66 + nf * 0.40) * GSF;       // 깊이 스케일 — 가로형 박스 비율 보존(앞 큼·뒤 작음)
+    let sx = ds, sy = ds;
     let z = Math.round(nf * 1000);
     if (i === gratHoverIdx && gratPop > 0.002) { const p = 1 + gratPop * 0.18; sx *= p; sy *= p; z += 1500; }   // 마우스 올린 카드 팝
     card.style.transform = `translate(-50%,-50%) translate(${x.toFixed(1)}px,${y.toFixed(1)}px) rotate(${rot.toFixed(2)}deg) scale(${sx.toFixed(3)},${sy.toFixed(3)})`;
@@ -905,18 +906,26 @@ function openBook(name) {
   const data = getBible(); const read = new Set(data[name] || []);
   const backdrop = $('#book-backdrop'); const panel = $('#book-panel');
   let cur = 1;
+  // 본문 글자 크기(배율) — 0.8~1.8, 기기에 기억
+  const FS_KEY = 'veil.bible.fontscale';
+  const getFS = () => { const v = parseFloat(localStorage.getItem(FS_KEY)); return (v >= 0.8 && v <= 1.8) ? v : 1; };
+  const applyFS = () => { const vs = panel.querySelector('.bp-verses'); if (vs) vs.style.fontSize = (1.02 * getFS()).toFixed(3) + 'rem'; };
+  const setFS = (v) => { localStorage.setItem(FS_KEY, Math.max(0.8, Math.min(1.8, Math.round(v * 20) / 20))); applyFS(); };
+  // 가운데 '펼친 책' — 왼쪽 면(목차·기록), 오른쪽 면(본문 읽기)
   panel.innerHTML = `
-    <button class="bp-close" id="bp-close" aria-label="닫기"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 5l12 12M17 5L5 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-    <span class="bp-group">${GROUP[g].name}</span>
-    <h2>${name}</h2>
-    <p class="bp-meta">전 ${total}장 · 읽은 장 <strong id="bp-count">${read.size}</strong>장 (<span id="bp-pct">${Math.round(read.size/total*100)}</span>%)</p>
-    <p class="hint">장을 눌러 본문을 펴 보세요. 읽은 장은 책장에 색으로 차오릅니다.</p>
-    <div class="chapter-grid" id="bp-grid"></div>
-    <div class="bp-actions">
-      <button class="btn btn-ghost btn-sm" id="bp-all">전체 완독 표시</button>
-      <button class="btn btn-text btn-sm" id="bp-clear">기록 초기화</button>
+    <button class="bp-close" id="bp-close" aria-label="닫기" style="position:absolute;top:12px;right:14px;z-index:3"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 5l12 12M17 5L5 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    <div class="bp-page" style="flex:1 1 300px;max-width:340px;min-width:0;padding:32px 24px 28px;border-right:1px solid rgba(70,52,24,.10);box-shadow:inset -18px 0 28px -22px rgba(70,52,24,.30)">
+      <span class="bp-group">${GROUP[g].name}</span>
+      <h2 style="margin-top:4px">${name}</h2>
+      <p class="bp-meta">전 ${total}장 · 읽은 장 <strong id="bp-count">${read.size}</strong>장 (<span id="bp-pct">${Math.round(read.size/total*100)}</span>%)</p>
+      <p class="hint">장을 눌러 본문을 펴 보세요. 읽은 장은 책장에 색으로 차오릅니다.</p>
+      <div class="chapter-grid" id="bp-grid"></div>
+      <div class="bp-actions">
+        <button class="btn btn-ghost btn-sm" id="bp-all">전체 완독 표시</button>
+        <button class="btn btn-text btn-sm" id="bp-clear">기록 초기화</button>
+      </div>
     </div>
-    <div class="bp-reader" id="bp-reader"></div>`;
+    <div class="bp-reader" id="bp-reader" style="flex:1.6 1 380px;min-width:0;margin-top:0;border-top:none;padding:32px 30px 28px"></div>`;
 
   const grid = $('#bp-grid', panel);
   function paintCells() {
@@ -941,7 +950,13 @@ function openBook(name) {
     reader.innerHTML = `
       <div class="bp-reader-head">
         <span class="bp-reader-title">${name} ${cur}장</span>
-        <button class="btn btn-ghost btn-sm bp-readtoggle ${isRead ? 'is-read' : ''}" id="bp-readtoggle">${isRead ? '✓ 읽음' : '읽음으로 표시'}</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden" role="group" aria-label="본문 글자 크기">
+            <button class="btn btn-text btn-sm" id="bp-font-dn" aria-label="글자 작게" title="글자 작게" style="padding:4px 11px;font-size:.8rem;border-radius:0">A−</button>
+            <button class="btn btn-text btn-sm" id="bp-font-up" aria-label="글자 크게" title="글자 크게" style="padding:4px 11px;font-size:1.06rem;border-radius:0;border-left:1px solid var(--line)">A+</button>
+          </div>
+          <button class="btn btn-ghost btn-sm bp-readtoggle ${isRead ? 'is-read' : ''}" id="bp-readtoggle">${isRead ? '✓ 읽음' : '읽음으로 표시'}</button>
+        </div>
       </div>
       <div class="bp-versebox" id="bp-versebox"><p class="bp-loading">본문을 불러오는 중…</p></div>
       <div class="bp-nav">
@@ -953,6 +968,8 @@ function openBook(name) {
       read.has(cur) ? read.delete(cur) : read.add(cur);
       saveBook(name, read); paintCells(); refreshMeta(); renderReader();
     });
+    $('#bp-font-dn', panel).addEventListener('click', () => setFS(getFS() - 0.1));
+    $('#bp-font-up', panel).addEventListener('click', () => setFS(getFS() + 0.1));
     const prev = $('#bp-prev', panel), next = $('#bp-next', panel);
     if (prev) prev.addEventListener('click', () => selectChapter(cur - 1));
     if (next) next.addEventListener('click', () => selectChapter(cur + 1));
@@ -964,13 +981,13 @@ function openBook(name) {
     if (ch !== cur) return;                                  // 그새 다른 장으로 이동했으면 폐기
     const box = $('#bp-versebox', panel); if (!box) return;
     box.innerHTML = verses && verses.length
-      ? `<div class="bp-verses">${verses.map((v, i) => `<span class="v"><span class="vn">${i+1}</span>${escapeHtml(v)}</span>`).join('')}</div>`
+      ? `<div class="bp-verses" style="font-size:${(1.02 * getFS()).toFixed(3)}rem">${verses.map((v, i) => `<span class="v"><span class="vn">${i+1}</span>${escapeHtml(v)}</span>`).join('')}</div>`
       : `<p class="bp-empty">본문을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>`;
   }
   function selectChapter(ch) {
     cur = Math.max(1, Math.min(total, ch));
     paintCells(); renderReader();
-    $('#bp-reader', panel).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    panel.scrollTo({ top: 0, behavior: 'smooth' });          // 새 장은 책 위에서부터 보이게
   }
   $('#bp-all', panel).addEventListener('click', () => { if (!confirm(`${name} ${total}장 전체를 ‘읽음’으로 표시할까요?`)) return; for (let i=1;i<=total;i++) read.add(i); saveBook(name, read); paintCells(); refreshMeta(); renderReader(); });
   $('#bp-clear', panel).addEventListener('click', () => { if (!read.size) return; if (!confirm(`${name}의 읽음 기록(${read.size}장)을 모두 지울까요? 되돌릴 수 없어요.`)) return; read.clear(); saveBook(name, read); paintCells(); refreshMeta(); renderReader(); });
@@ -978,8 +995,21 @@ function openBook(name) {
 
   selectChapter(1);
   bookOpener = name;                                         // 닫을 때 해당 책등으로 포커스 복귀용
+  // 우측 슬라이드 패널 → 화면 가운데 '펼친 책' 모달로 크게 띄운다 (인라인으로 .book-panel CSS 덮어쓰기)
+  Object.assign(panel.style, {
+    position: 'fixed', left: '50%', top: '50%', right: 'auto', bottom: 'auto',
+    width: 'min(960px, 95vw)', height: 'auto', maxHeight: '90vh',
+    flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch',
+    padding: '0', overflowY: 'auto', borderRadius: '14px',
+    background: 'linear-gradient(180deg,#FFFDF8,#F4EDDF)',
+    boxShadow: '0 30px 90px rgba(45,32,12,.36)',
+    transition: 'opacity .28s ease, transform .28s ease', pointerEvents: 'auto',
+  });
   backdrop.classList.add('open'); panel.classList.add('open');
   panel.setAttribute('aria-hidden', 'false');               // 열린 패널을 보조기기에 노출
+  panel.style.opacity = '0'; panel.style.transform = 'translate(-50%,-50%) scale(.97)';
+  void panel.offsetWidth;                                    // 리플로우 → 전환이 적용되도록
+  panel.style.opacity = '1'; panel.style.transform = 'translate(-50%,-50%) scale(1)';
   const closeBtn = $('#bp-close', panel); if (closeBtn) closeBtn.focus();
 }
 function saveBook(name, set) { const d = getBible(); const arr = [...set].sort((a,b)=>a-b); if (arr.length) d[name] = arr; else delete d[name]; store.set(BIBLE_KEY, d); }
@@ -988,6 +1018,9 @@ function closeBook() {
   const panel = $('#book-panel');
   if (!panel || !panel.classList.contains('open')) return;   // 열려 있을 때만 동작(불필요한 재렌더 방지)
   $('#book-backdrop').classList.remove('open'); panel.classList.remove('open');
+  panel.style.opacity = '0';
+  panel.style.transform = 'translate(-50%,-50%) scale(.97)';
+  panel.style.pointerEvents = 'none';
   panel.setAttribute('aria-hidden', 'true');
   renderBible();
   if (bookOpener) { const sp = $(`.spine[data-book="${bookOpener}"]`); if (sp) { try { sp.focus(); } catch {} } bookOpener = null; }
