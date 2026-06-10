@@ -12,6 +12,7 @@ const MODEL = process.env.VEIL_GEN_MODEL || 'exaone3.5:2.4b';
 const API = 'http://localhost:11434/api/chat';
 const round = process.argv[2] || 'x';
 const N = parseInt(process.argv[3] || '2', 10);
+const ANGLE = (process.argv[4] || '').trim();   // 라운드별 창작 각도(다양성 고도화)
 
 const w = {};
 new Function('window', readFileSync(BASE + 'confession-data.js', 'utf8'))(w);
@@ -35,8 +36,9 @@ const SYS = `너는 개혁주의(개신교) 신학에 기초한 한국어 영성
 - 출력은 JSON 배열만: [{"meditation":"...","prayer":"...","application":"..."}]`;
 
 function userPrompt(cat) {
-  const ex = seen[cat.key].meds.slice(-4).map(e => '- ' + e).join('\n');
-  return `회개 주제: "${cat.label}". 아래 기존 묵상과 겹치지 않게 다른 각도로 새로 써라.\n[기존]\n${ex}\n\n${N}개를 JSON 배열로만 출력.`;
+  const ex = seen[cat.key].meds.slice(-6).map(e => '- ' + e).join('\n');
+  const angleLine = ANGLE ? `\n[이번 라운드 각도] ${ANGLE} — 이 관점으로 새 묵상을 써라.` : '';
+  return `회개 주제: "${cat.label}". 아래 기존 묵상과 겹치지 않게 완전히 다른 각도로 새로 써라.${angleLine}\n[기존]\n${ex}\n\n${N}개를 JSON 배열로만 출력.`;
 }
 
 async function gen(cat) {
@@ -51,6 +53,18 @@ async function gen(cat) {
 }
 
 const BAD = ['고해성사', '마리아', '연옥', '공로사상', '사제', '신부님', '죄를 사한', '사하노라', '면죄'];
+// 소형모델 말더듬(인접 어근 반복: "다윗의 다윗", "말씀의 말씀") 차단 — 첩어·호격은 예외
+const _strip = t => t.replace(/[의은는이가을를에과와도만에서로부터,.!?·…"'()]/g, '');
+const _REDUP = new Set(['하나', '하루', '조금', '점점', '차츰', '천천', '더욱', '한걸음', '한발', '가지각']);
+function stutters(s) {
+  const toks = (s || '').split(/\s+/);
+  for (let i = 0; i < toks.length - 1; i++) {
+    if (/[,.!?]$/.test(toks[i])) continue;
+    const a = _strip(toks[i]), b = _strip(toks[i + 1]);
+    if (a.length >= 2 && a === b && !_REDUP.has(a)) return true;
+  }
+  return false;
+}
 const norm = s => (s || '').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, '');
 const bg = s => { const n = norm(s), S = new Set(); for (let i = 0; i < n.length - 1; i++) S.add(n.slice(i, i + 2)); return S; };
 function dup(s, pool) { const A = bg(s); for (const p of pool) { const B = bg(p); if (!A.size || !B.size) continue; let c = 0; for (const x of A) if (B.has(x)) c++; if (c / Math.min(A.size, B.size) > 0.8) return true; } return false; }
@@ -58,6 +72,7 @@ function qa(it, cat, fresh) {
   const med = (it.meditation || '').trim(), pr = (it.prayer || '').trim(); let ap = (it.application || '').trim();
   if (med.length < 35 || med.length > 320 || pr.length < 25 || pr.length > 320) return null;
   if (/[A-Za-z]/.test(med + pr)) return null;                    // 영어 혼입 금지
+  if (stutters(med) || stutters(pr)) return null;                // 말더듬(어근 인접 반복) 금지
   if (!/^(주님|하나님|아버지|주\s*예수)/.test(pr)) return null;    // 기도 시작 구조
   if (!/아멘\.?\s*$/.test(pr)) return null;                       // 기도 종결
   for (const b of BAD) if ((med + pr).includes(b)) return null;
