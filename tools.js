@@ -217,7 +217,7 @@ function buildRing() {
     let fill = '';
     if (m.photo) fill = `background-image:url('${m.photo}')`;
     else if (on) fill = `background:${GRAT_COLORS[(m.color || 0) % GRAT_COLORS.length]}`;
-    return `<button class="gr2-card${on ? ' on' : ''}" data-i="${i}" style="${fill}" aria-label="${prettyDate(ds)}"></button>`;
+    return `<button class="gr2-card${on ? ' on' : ''}" data-i="${i}" tabindex="-1" style="${fill}" aria-label="${prettyDate(ds)}"></button>`;
   }).join('');
   const y = gratDates[0].slice(0, 4);
   let mh = '';
@@ -628,7 +628,7 @@ function renderPrayer() {
       <div class="${premium ? '' : 'locked'}">
         ${!premium ? `<div class="lock-overlay"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg><p><strong>동행 멤버십</strong> 전용 기능입니다. 적어 둔 감사를 모아 예배용 기도문으로 엮어 드려요.</p><a class="btn btn-gold btn-sm" href="index.html#pricing">멤버십 보기</a></div>` : ''}
         <div class="prayer-cta">
-          <button class="btn btn-gold" id="prayer-gen" ${hasAny ? '' : 'disabled'}>${hasAny ? '기도문 생성하기' : '먼저 감사일기를 적어 주세요'}</button>
+          <button class="btn btn-gold" id="prayer-gen" ${premium && hasAny ? '' : 'disabled'} ${premium ? '' : 'tabindex="-1" aria-hidden="true"'}>${hasAny ? '기도문 생성하기' : '먼저 감사일기를 적어 주세요'}</button>
           ${hasAny ? '' : `<a class="btn btn-text btn-sm" href="#gratitude">감사일기 적으러 가기 →</a>`}
         </div>
         ${premium && hasAny ? `<p class="prayer-privacy hint" style="margin:10px 0 0;line-height:1.6">‘생성하기’를 누르면 이 감사 기록이 맞춤 기도문 작성을 위해 안전한 AI로 전송됩니다. 그 외에는 감사일기가 기기 안에만 보관돼요.</p>` : ''}
@@ -716,6 +716,7 @@ function renderJournal() {
         : `<p class="empty-note">아직 저장된 회개 일기가 없어요. <a href="index.html#repent">회개의 자리</a>에서 마음을 적고 “일기에 저장”을 눌러 보세요.</p>`}
     </div>`;
   mount.querySelectorAll('.je-del').forEach(b => b.addEventListener('click', () => {
+    if (!confirm('이 회개 일기를 삭제할까요? 되돌릴 수 없어요.')) return;
     const i = +b.dataset.i; const l = store.get(CONFESSION_JOURNAL_KEY, []); l.splice(i, 1); store.set(CONFESSION_JOURNAL_KEY, l); renderJournal();
   }));
 }
@@ -751,7 +752,7 @@ function renderBible() {
       const hue = GROUP[g].hue;
       const h = Math.round(94 + Math.min(total, 60) * 0.95);
       const done = r >= total;
-      return `<div class="spine ${done?'done':''}" data-book="${name}" style="height:${h}px;background:${hexA(hue,0.13)}" title="${name} · ${r}/${total}장">
+      return `<div class="spine ${done?'done':''}" data-book="${name}" role="button" tabindex="0" aria-label="${name} · ${r}/${total}장 읽음" style="height:${h}px;background:${hexA(hue,0.13)}" title="${name} · ${r}/${total}장">
         <div class="spine-fill" style="height:${pct}%;background:${done?hue:hexA(hue,0.75)}"></div>
         <span class="spine-name">${name}</span></div>`;
     }).join('');
@@ -775,7 +776,10 @@ function renderBible() {
       ${premium ? `<a class="btn btn-ghost btn-sm" href="#" id="plan-btn" style="margin-left:auto">1년 통독 플랜 시작</a>` : ''}
     </div>`;
 
-  mount.querySelectorAll('.spine').forEach(s => s.addEventListener('click', () => openBook(s.dataset.book)));
+  mount.querySelectorAll('.spine').forEach(s => {
+    s.addEventListener('click', () => openBook(s.dataset.book));
+    s.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBook(s.dataset.book); } });
+  });
   const planBtn = $('#plan-btn', mount); if (planBtn) planBtn.addEventListener('click', e => { e.preventDefault(); alert('1년 통독 플랜: 오늘부터 매일 약 3~4장. (데모 — 실제 플랜 일정/알림은 서버 연동 후)'); });
 }
 function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
@@ -854,14 +858,25 @@ function openBook(name) {
     $('#bp-reader', panel).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   $('#bp-all', panel).addEventListener('click', () => { if (!confirm(`${name} ${total}장 전체를 ‘읽음’으로 표시할까요?`)) return; for (let i=1;i<=total;i++) read.add(i); saveBook(name, read); paintCells(); refreshMeta(); renderReader(); });
-  $('#bp-clear', panel).addEventListener('click', () => { read.clear(); saveBook(name, read); paintCells(); refreshMeta(); renderReader(); });
+  $('#bp-clear', panel).addEventListener('click', () => { if (!read.size) return; if (!confirm(`${name}의 읽음 기록(${read.size}장)을 모두 지울까요? 되돌릴 수 없어요.`)) return; read.clear(); saveBook(name, read); paintCells(); refreshMeta(); renderReader(); });
   $('#bp-close', panel).addEventListener('click', closeBook);
 
   selectChapter(1);
+  bookOpener = name;                                         // 닫을 때 해당 책등으로 포커스 복귀용
   backdrop.classList.add('open'); panel.classList.add('open');
+  panel.setAttribute('aria-hidden', 'false');               // 열린 패널을 보조기기에 노출
+  const closeBtn = $('#bp-close', panel); if (closeBtn) closeBtn.focus();
 }
 function saveBook(name, set) { const d = getBible(); const arr = [...set].sort((a,b)=>a-b); if (arr.length) d[name] = arr; else delete d[name]; store.set(BIBLE_KEY, d); }
-function closeBook() { $('#book-backdrop').classList.remove('open'); $('#book-panel').classList.remove('open'); renderBible(); }
+let bookOpener = null;
+function closeBook() {
+  const panel = $('#book-panel');
+  if (!panel || !panel.classList.contains('open')) return;   // 열려 있을 때만 동작(불필요한 재렌더 방지)
+  $('#book-backdrop').classList.remove('open'); panel.classList.remove('open');
+  panel.setAttribute('aria-hidden', 'true');
+  renderBible();
+  if (bookOpener) { const sp = $(`.spine[data-book="${bookOpener}"]`); if (sp) { try { sp.focus(); } catch {} } bookOpener = null; }
+}
 
 /* ───────────  boot  ─────────── */
 window.addEventListener('hashchange', route);
