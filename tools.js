@@ -170,7 +170,7 @@ let gratFocusIdx = -1;     // 현재 포커스된 정수 인덱스
 let gratDates = [];
 let gratYear = null, gratMonth = null;   // 현재 보고 있는 달 (월 단위 원)
 let gratRX = 360, gratRY = 200;          // 화면 폭에 맞춰 동적으로 계산
-const GR_BEND = 0.30;   // 가로형 카드가 너무 비틀리지 않게 회전 완화
+const GR_BEND = 0.16;   // 큰 4:3 카드가 거의 똑바로 서게(비틀림 최소)
 let gratHoverIdx = -1, gratPop = 0;      // 마우스 올린 카드의 팝(아이폰 햅틱) 정도
 let gratTiltX = 0, gratTiltY = 0;        // 원 전체의 기우뚱(중심 고정)
 let commitGratEditor = null;             // 현재 편집 중인 날의 미저장 감사를 조용히 보존(이탈 시 자동 저장)
@@ -227,11 +227,10 @@ function computeRingDims() {
   const stage = $('#gr2-stage'); if (!stage) return;
   const W = stage.clientWidth || window.innerWidth;
   const H = window.innerHeight || 800;
-  let rx = Math.min(W * 0.40, 720);            // 폭 기준 (상한 720)
-  rx = Math.min(rx, (H * 0.72 - 60) / 0.95);   // 세로로 넘치지 않게
-  gratRX = Math.max(280, rx);
-  gratRY = gratRX * 0.40;                       // 약간 납작한 타원
-  stage.style.height = Math.round(gratRY * 2 + gratRX * 0.34 + 130) + 'px';
+  let rx = Math.min(W * 0.60, 880);            // 큰 4:3 사진을 위해 더 큰 원(양 옆은 화면 밖으로 흘림)
+  gratRX = Math.max(360, rx);
+  gratRY = gratRX * 0.18;                       // 납작한 아치 → 앞 카드가 화면 안에 들어오게
+  stage.style.height = Math.round(gratRY * 2 + 300) + 'px';
   const pin = stage.querySelector('.gr2-pin');
   if (pin) pin.style.top = `calc(50% + ${Math.round(gratRY)}px)`;
 }
@@ -246,9 +245,8 @@ function buildRing() {
     else if (on) fill = `background:${GRAT_COLORS[(m.color || 0) % GRAT_COLORS.length]}`;
     return `<button class="gr2-card${on ? ' on' : ''}" data-i="${i}" tabindex="-1" style="${fill}" aria-label="${prettyDate(ds)}"></button>`;
   }).join('');
-  // 월 단위 원 — 날짜(일) 라벨을 카드 바깥에 배치
-  $('#gr2-months').innerHTML = gratDates.map((ds, i) =>
-    `<span class="gr2-mlabel gr2-daylabel" data-i="${i}">${+ds.slice(8, 10)}</span>`).join('');
+  // 큰 사진 원에선 날짜 라벨 생략(가운데 날짜 표시로 충분)
+  $('#gr2-months').innerHTML = '';
 }
 
 function layoutRing() {
@@ -262,7 +260,8 @@ function layoutRing() {
     const nf = (1 + co) / 2;                  // 1 = 앞(아래·포커스), 0 = 뒤(위·멀어짐)
     const x = Math.sin(ar) * gratRX, y = co * gratRY;
     const rot = ar * 180 / Math.PI * GR_BEND;
-    const ds = (0.66 + nf * 0.40) * GSF;       // 깊이 스케일 — 가로형 박스 비율 보존(앞 큼·뒤 작음)
+    const CSF = Math.min(1, gratRX / 900);     // 카드 크기는 원 크기와 분리(작은 화면에서만 축소)
+    const ds = (0.66 + nf * 0.34) * CSF;       // 깊이 스케일(비율 보존) — 앞 큼·뒤 작음
     let sx = ds, sy = ds;
     let z = Math.round(nf * 1000);
     if (i === gratHoverIdx && gratPop > 0.002) { const p = 1 + gratPop * 0.18; sx *= p; sy *= p; z += 1500; }   // 마우스 올린 카드 팝

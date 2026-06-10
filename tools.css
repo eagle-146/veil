@@ -350,27 +350,27 @@ body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
 .gr2-stage {
   position: relative; width: 100vw; left: 50%; transform: translateX(-50%);
   height: 600px; margin: 10px 0 4px; touch-action: pan-y; cursor: grab; user-select: none;
-  perspective: 1500px; perspective-origin: 50% 46%;
+  perspective: 1500px; perspective-origin: 50% 46%; overflow: hidden;
 }
 .gr2-stage.dragging { cursor: grabbing; }
 .gr2-world { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
 .gr2-ring, .gr2-months { position: absolute; inset: 0; transform-style: preserve-3d; }
 .gr2-card {
-  position: absolute; left: 50%; top: 50%; width: 152px; height: 58px; padding: 0; border: 0; border-radius: 9px;
+  position: absolute; left: 50%; top: 50%; width: 200px; height: 150px; padding: 0; border: 0; border-radius: 12px;
   background-color: #ECE6DA; background-size: cover; background-position: center;
   box-shadow: 0 2px 8px rgba(40, 34, 24, .14); cursor: pointer; will-change: transform, opacity; transform-origin: 50% 50%;
 }
 .gr2-card.on { box-shadow: 0 2px 6px rgba(40, 34, 24, .16); }
 .gr2-card:not(.on) { background: #EFEAE0; }
-.gr2-card.focus { box-shadow: 0 4px 14px rgba(40, 34, 24, .26); }
+.gr2-card.focus { box-shadow: 0 6px 20px rgba(40, 34, 24, .28), 0 0 0 3px var(--gold); }
 .gr2-mlabel { position: absolute; left: 50%; top: 50%; white-space: nowrap; font-size: .8rem; letter-spacing: .04em; color: var(--ink-3); pointer-events: none; }
 .gr2-mlabel i { font-size: .6rem; color: var(--muted); vertical-align: super; font-style: normal; margin-left: 2px; }
-.gr2-pin { position: absolute; left: 50%; top: calc(50% + 200px); width: 7px; height: 7px; border-radius: 50%; background: var(--ink); transform: translate(-50%, -50%); z-index: 4000; }
-.gr2-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 320px; text-align: center; pointer-events: none; z-index: 3000; }
-.gr2c-date { font-family: var(--serif); font-size: 1.6rem; color: var(--ink); margin-bottom: 16px; line-height: 1.2; }
-.gr2c-media { width: 268px; height: 158px; margin: 0 auto; border-radius: var(--r-md); background-size: cover; background-position: center; box-shadow: var(--shadow-md); }
-.gr2c-media.empty { display: flex; align-items: center; justify-content: center; background: var(--bg-2); color: var(--muted); font-size: .85rem; box-shadow: none; border: 1px dashed var(--line-2); }
-.gr2c-text { margin-top: 14px; font-family: var(--serif); color: var(--ink-2); font-size: .96rem; line-height: 1.6; }
+.gr2-pin { display: none; }
+/* 큰 카드 모드: 가운데엔 날짜·텍스트 캡션만(사진은 카드가 직접 보여줌) */
+.gr2-center { position: absolute; left: 50%; top: 30px; transform: translateX(-50%); width: 340px; text-align: center; pointer-events: none; z-index: 3000; }
+.gr2c-date { font-family: var(--serif); font-size: 1.5rem; color: var(--ink); margin-bottom: 6px; line-height: 1.2; }
+.gr2c-media { display: none; }
+.gr2c-text { margin-top: 2px; font-family: var(--serif); color: var(--ink-3); font-size: .95rem; line-height: 1.6; }
 @media (max-width: 760px) { .gr2c-media { width: 220px; height: 130px; } .gr2c-date { font-size: 1.35rem; } }
 
 /* 월 단위 네비게이션 + 날짜 라벨 */
