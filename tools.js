@@ -611,6 +611,7 @@ function renderPrayer() {
           <button class="btn btn-gold" id="prayer-gen" ${hasAny ? '' : 'disabled'}>${hasAny ? '기도문 생성하기' : '먼저 감사일기를 적어 주세요'}</button>
           ${hasAny ? '' : `<a class="btn btn-text btn-sm" href="#gratitude">감사일기 적으러 가기 →</a>`}
         </div>
+        ${premium && hasAny ? `<p class="prayer-privacy hint" style="margin:10px 0 0;line-height:1.6">‘생성하기’를 누르면 이 감사 기록이 맞춤 기도문 작성을 위해 안전한 AI로 전송됩니다. 그 외에는 감사일기가 기기 안에만 보관돼요.</p>` : ''}
         <div id="prayer-out"></div>
       </div>
     </div>`;
@@ -642,9 +643,12 @@ function renderPrayer() {
   }
 }
 function renderPrayerOut(text, demo) {
+  const hint = demo
+    ? '기기에서 엮은 기본 기도문이에요 (AI 연결 시 더 깊고 매끄러운 기도문을 받습니다).'
+    : '한 주의 감사를 AI가 한 편의 기도로 엮어 드렸어요.';
   return `<div class="prayer-output"><h3>이번 주 감사의 기도</h3><p>${escapeHtml(text)}</p>
     <div class="po-foot"><button class="btn btn-ghost btn-sm" id="prayer-copy">복사하기</button><button class="btn btn-text btn-sm" id="prayer-regen">다시 만들기</button>
-    <span class="hint" style="align-self:center">한 주의 감사를 엮어 만든 기도문입니다</span></div></div>`;
+    <span class="hint" style="align-self:center">${hint}</span></div></div>`;
 }
 function bindPrayerOut(mount) {
   const c = $('#prayer-copy', mount); if (c) c.addEventListener('click', () => { navigator.clipboard?.writeText($('.prayer-output p', mount).textContent); c.textContent = '복사됨 ✓'; setTimeout(()=>c.textContent='복사하기',1500); });
