@@ -829,29 +829,32 @@ function renderBible() {
   let readCh = 0, totalCh = 0, doneBooks = 0;
   BIBLE.forEach(([name, total]) => { const r = (data[name]||[]).length; readCh += r; totalCh += total; if (r >= total) doneBooks++; });
 
-  const renderTestament = (label, slice) => {
-    const spines = slice.map(([name, total, g]) => {
-      const r = (data[name]||[]).length; const pct = Math.round(r/total*100);
-      const hue = GROUP[g].hue;
-      const h = Math.round(94 + Math.min(total, 60) * 0.95);
-      const done = r >= total;
-      return `<div class="spine ${done?'done':''}" data-book="${name}" role="button" tabindex="0" aria-label="${name} · ${r}/${total}장 읽음" style="height:${h}px;background:${hexA(hue,0.13)}" title="${name} · ${r}/${total}장">
+  const spineHtml = ([name, total, g]) => {
+    const r = (data[name]||[]).length; const pct = Math.round(r/total*100);
+    const hue = GROUP[g].hue;
+    const h = Math.round(94 + Math.min(total, 60) * 0.95);
+    const done = r >= total;
+    return `<div class="spine ${done?'done':''}" data-book="${name}" role="button" tabindex="0" aria-label="${name} · ${r}/${total}장 읽음" style="height:${h}px;background:${hexA(hue,0.13)}" title="${name} · ${r}/${total}장">
         <div class="spine-fill" style="height:${pct}%;background:${done?hue:hexA(hue,0.75)}"></div>
         <span class="spine-name">${name}</span></div>`;
-    }).join('');
-    return `<div class="testament-label">${label}</div><div class="shelf">${spines}</div>`;
+  };
+  // 가로로 길지 않게 한 줄당 권수를 정해 여러 책장 줄로 쌓는다(구약 13×3 + 신약 14·13 = 5줄).
+  const renderTestament = (label, slice, perRow) => {
+    let rows = '';
+    for (let i = 0; i < slice.length; i += perRow) rows += `<div class="shelf">${slice.slice(i, i + perRow).map(spineHtml).join('')}</div>`;
+    return `<div class="testament-label">${label}</div>${rows}`;
   };
 
   mount.innerHTML = `
     ${!premium ? `<div class="upsell"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg><div class="upsell-text"><strong>동행 멤버십</strong>: 1년 통독·맥체인 플랜 · 음성 낭독 · 하이라이트·메모 · 원어/다국어 · 완독 뱃지.<p>무료는 책장에서 읽은 장을 기록하고 색으로 완독을 표시하는 기능까지.</p></div><a class="btn btn-gold btn-sm" href="index.html#pricing">멤버십 보기</a></div>` : ''}
-    <div class="shelf-wrap">
+    <div class="shelf-wrap" style="width:fit-content;max-width:100%">
       <div class="shelf-legend">
         <span class="lg"><span class="sw" style="background:rgba(255,255,255,.12)"></span>읽기 전</span>
         <span class="lg"><span class="sw" style="background:#A88762"></span>읽는 중 (색이 차오름)</span>
         <span class="lg"><span class="sw" style="background:var(--gold-2);box-shadow:0 0 6px var(--gold-2)"></span>완독</span>
       </div>
-      ${renderTestament('구약 39권', BIBLE.slice(0,39))}
-      ${renderTestament('신약 27권', BIBLE.slice(39))}
+      ${renderTestament('구약 39권', BIBLE.slice(0,39), 13)}
+      ${renderTestament('신약 27권', BIBLE.slice(39), 14)}
     </div>
     <div class="bible-stat">
       <div><div class="bs-num">${Math.round(readCh/totalCh*100)}%</div><div class="bs-label">통독 진행 (${readCh}/${totalCh}장)</div></div>
