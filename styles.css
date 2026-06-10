@@ -1776,6 +1776,18 @@ body.vauth-lock { overflow: hidden; }
 .repent.solo .app-card{ max-width:680px; margin:0 auto; padding:26px 26px 22px; }
 .repent.solo .confess-helpers{ margin-bottom:14px; }
 .repent.solo .confess-textarea{ min-height:118px; border-radius:14px; }
+/* 모바일: 칩을 한 줄 가로 스크롤로 → 입력 박스 높이 확보 (오른쪽 페이드로 더보기 힌트) */
+@media (max-width:600px){
+  .repent.solo .confess-helpers{
+    flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    margin-bottom:12px; padding-bottom:2px;
+    -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);
+            mask-image:linear-gradient(90deg,#000 86%,transparent);
+  }
+  .repent.solo .confess-helpers::-webkit-scrollbar{ display:none; }
+  .repent.solo .confess-helpers .chip,
+  .repent.solo .confess-helpers .helper-label{ flex:0 0 auto; white-space:nowrap; }
+}
 .repent.solo .step-actions{ border-top:none; padding-top:14px; margin-top:6px; justify-content:flex-end; }
 .repent.solo .response-actions{ border-top:1px solid var(--line); }
 .repent.solo .app-note{ max-width:560px; margin:22px auto 0; }
