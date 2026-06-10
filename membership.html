@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Veil — 멤버십</title>
+  <meta name="description" content="주님께서 거저 주신 은혜, 우리가 거저 나눕니다. 무료로 충분하고, 더 누리고 싶을 때 동행 멤버십으로 함께해 주세요." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .pricing.page{ padding:128px 0 96px; min-height:100vh; }
+    @media (max-width:560px){ .pricing.page{ padding:100px 0 64px; } }
+  </style>
+</head>
+<body>
+
+<header class="nav is-scrolled" id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="brand" aria-label="Veil 홈">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="currentColor"><path d="M14 13 H50 a2.4 2.4 0 0 1 2.34 2.92 L49.3 49.1 A2.4 2.4 0 0 1 46.96 51 H42 a2 2 0 0 1 -1.95 -2.44 C41.6 42 33.9 24.6 32 21 C30.1 24.6 22.4 42 23.95 48.56 A2 2 0 0 1 22 51 H17.04 A2.4 2.4 0 0 1 14.7 49.1 L11.66 15.92 A2.4 2.4 0 0 1 14 13 Z"/></svg>
+      </span>
+      <span class="brand-name">Veil</span>
+    </a>
+    <nav class="nav-links" aria-label="주요 메뉴">
+      <a href="index.html">회개의 자리</a>
+      <a href="tools.html">은혜의 도구</a>
+      <a href="membership.html" class="is-current">멤버십</a>
+    </nav>
+    <div class="nav-cta">
+      <span id="auth-slot" class="auth-slot"></span>
+      <button class="nav-toggle" id="nav-toggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="nav-sheet">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 6.5h16M3 11h16M3 15.5h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="nav-sheet" id="nav-sheet" aria-hidden="true">
+  <button class="nav-sheet-close" id="nav-sheet-close" aria-label="메뉴 닫기">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 5l12 12M17 5L5 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+  </button>
+  <nav class="nav-sheet-links" aria-label="모바일 메뉴">
+    <a href="index.html">회개의 자리</a>
+    <a href="tools.html">은혜의 도구</a>
+    <a href="membership.html">멤버십</a>
+  </nav>
+  <div class="nav-sheet-cta">
+    <span id="auth-slot-m" class="auth-slot"></span>
+  </div>
+</div>
+
+<section class="pricing page" id="pricing">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="kicker"><i>·</i> 멤버십</span>
+      <h2>주님께서 거저 주신 은혜, 우리가 거저 나눕니다.</h2>
+      <p class="lead">
+        무료만으로도 충분합니다. 더 누리고 싶을 때 멤버십으로 함께해 주세요.
+        멤버십으로 모인 수익은 Veil의 개발과 운영에 쓰이고, 그중 일부는 미자립교회와 선교지를 섬기는 데 보탭니다.
+      </p>
+    </header>
+
+    <div class="plan-grid">
+
+      <article class="plan reveal">
+        <header class="plan-head">
+          <h3>은혜</h3>
+          <p class="plan-tag">무료 · 영원히</p>
+        </header>
+        <div class="plan-price"><span class="num">₩0</span><span class="per">/월</span></div>
+        <ul class="plan-feat list-veil">
+          <li>일 1회 회개와 말씀 응답</li>
+          <li>감사일기 — 하루 3개 · 최근 14일 보관</li>
+          <li>큐티 — 매일 본문 + 4단계 묵상</li>
+          <li>성경 책장 — 읽기 기록 · 완독 표시</li>
+          <li>익명 사용 가능</li>
+        </ul>
+        <a class="btn btn-ghost btn-block" href="index.html">지금 시작하기</a>
+      </article>
+
+      <article class="plan plan-featured reveal">
+        <span class="plan-badge">가장 사랑받는</span>
+        <header class="plan-head">
+          <h3>동행</h3>
+          <p class="plan-tag">개인 · 깊은 동행</p>
+        </header>
+        <div class="plan-price"><span class="num">₩9,900</span><span class="per">/월</span></div>
+        <ul class="plan-feat list-veil">
+          <li><strong>무제한</strong> 회개 + 맞춤 묵상·적용</li>
+          <li>감사일기 무제한 · 사진 · 감사 통계</li>
+          <li>큐티 본문 해설 + 묵상을 여는 질문</li>
+          <li>감사 기반 <strong>기도문 자동 생성</strong></li>
+          <li>성경 통독 플랜 · 음성 낭독 · 메모</li>
+          <li>회개 일기 암호화 보관 · 월간 리포트</li>
+        </ul>
+        <button class="btn btn-gold btn-block" data-plan="companion">동행 시작하기</button>
+        <p class="plan-foot">연간 결제 시 2개월 무료 (₩99,000/년)</p>
+      </article>
+
+      <article class="plan reveal">
+        <header class="plan-head">
+          <h3>가정</h3>
+          <p class="plan-tag">가족 · 최대 4인</p>
+        </header>
+        <div class="plan-price"><span class="num">₩19,900</span><span class="per">/월</span></div>
+        <ul class="plan-feat list-veil">
+          <li>동행 전 기능 × 4명</li>
+          <li>가정 예배 자료 (주간)</li>
+          <li>어린이 버전 기도문</li>
+          <li>가족 함께 기도방 · 통독 현황 공유</li>
+          <li>중보 알림 기능</li>
+        </ul>
+        <button class="btn btn-ghost btn-block" data-plan="family">가족과 시작하기</button>
+      </article>
+
+    </div>
+
+    <div class="tool-compare reveal">
+      <div class="tc-head">
+        <span class="tc-tool">도구별 차이</span>
+        <span class="tc-col">무료 (은혜)</span>
+        <span class="tc-col tc-paid">동행</span>
+      </div>
+      <div class="tc-row"><span class="tc-tool">회개와 말씀 응답</span><span class="tc-col">일 1회 · 신학 검수 응답</span><span class="tc-col tc-paid">무제한 · 맞춤 묵상+적용</span></div>
+      <div class="tc-row"><span class="tc-tool">감사일기</span><span class="tc-col">하루 3개 · 최근 14일</span><span class="tc-col tc-paid">무제한 · 사진 · 감사 통계</span></div>
+      <div class="tc-row"><span class="tc-tool">큐티 (QT)</span><span class="tc-col">매일 본문 + 4단계</span><span class="tc-col tc-paid">본문 해설 · 묵상 질문 · 통독 연계</span></div>
+      <div class="tc-row"><span class="tc-tool">감사 기반 기도문 생성</span><span class="tc-col tc-no">—</span><span class="tc-col tc-paid">주간 감사 → 예배용 기도문</span></div>
+      <div class="tc-row"><span class="tc-tool">성경 책장</span><span class="tc-col">읽기 기록 · 완독 색 표시</span><span class="tc-col tc-paid">통독 플랜 · 음성 낭독 · 하이라이트·메모</span></div>
+    </div>
+
+    <div class="offering reveal">
+      <div class="offering-text">
+        <h4>후원으로 함께 세우기</h4>
+        <p>멤버십이 부담스럽거나, 이 일에 마음을 보태고 싶으시다면. 보내주신 후원은 Veil의 개발과 운영에 쓰이고, 그중 일부는 미자립교회와 선교지 사역에 보탭니다.</p>
+      </div>
+      <button class="btn btn-ghost">후원하기 →</button>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="currentColor"><path d="M14 13 H50 a2.4 2.4 0 0 1 2.34 2.92 L49.3 49.1 A2.4 2.4 0 0 1 46.96 51 H42 a2 2 0 0 1 -1.95 -2.44 C41.6 42 33.9 24.6 32 21 C30.1 24.6 22.4 42 23.95 48.56 A2 2 0 0 1 22 51 H17.04 A2.4 2.4 0 0 1 14.7 49.1 L11.66 15.92 A2.4 2.4 0 0 1 14 13 Z"/></svg>
+      </span>
+      <span class="brand-name">Veil</span>
+      <p class="footer-tag">너는 기도할 때에 네 골방에 들어가 문을 닫고 — 마 6:6</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <h5>서비스</h5>
+        <a href="index.html">회개의 자리</a>
+        <a href="tools.html">은혜의 도구</a>
+        <a href="membership.html">멤버십</a>
+      </div>
+      <div>
+        <h5>운영</h5>
+        <a href="policy.html#terms">이용약관</a>
+        <a href="policy.html#privacy">개인정보처리방침</a>
+        <a href="policy.html#refund">환불 정책</a>
+      </div>
+      <div>
+        <h5>문의</h5>
+        <a href="mailto:apps@junsang.kr">apps@junsang.kr</a>
+        <a href="#">신학 자문단</a>
+        <a href="#">사역 후원</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom container">
+    <small>© 2026 Veil · <span class="soli">Soli Deo Gloria</span></small>
+    <small>본 서비스는 어느 특정 교단을 대표하지 않으며, 개혁주의 신학을 기초로 합니다.</small>
+  </div>
+</footer>
+
+<script src="supabase-config.js"></script>
+<script src="auth.js"></script>
+<script>
+/* 멤버십 페이지 전용 경량 스크립트 (script.js 미로드) */
+(function(){
+  // reveal
+  var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('is-visible'); io.unobserve(e.target);} }); }, {threshold:.1, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  // 모바일 메뉴
+  var sheet=document.getElementById('nav-sheet');
+  document.getElementById('nav-toggle')?.addEventListener('click', function(){ sheet.setAttribute('aria-hidden','false'); });
+  document.getElementById('nav-sheet-close')?.addEventListener('click', function(){ sheet.setAttribute('aria-hidden','true'); });
+  // 플랜 데모 (실제 결제 연동 전)
+  document.querySelectorAll('[data-plan]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var plan=btn.dataset.plan;
+      if(confirm('[데모] '+(plan==='companion'?'동행':'가정')+' 멤버십 결제로 이동합니다.\n실제 결제 연동(토스페이먼츠/스트라이프) 전까지는 데모 모드로 활성화됩니다.\n\n계속하시겠습니까?')){
+        try{ localStorage.setItem('golbang.tier','premium'); }catch(e){}
+        alert('데모 모드에서 동행 멤버십이 활성화되었습니다.\n무제한 회개와 멤버 전용 도구를 둘러보실 수 있어요.\n실제 결제 연동은 준비 중입니다.');
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

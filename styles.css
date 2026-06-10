@@ -1784,3 +1784,15 @@ body.vauth-lock { overflow: hidden; }
   .solo-head .hc-disp{ font-size:1.8rem; }
   .repent.solo .app-card{ padding:22px 18px 18px; }
 }
+
+/* 회개 응답 안 멤버십 유도 CTA */
+.member-cta{
+  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  margin:18px 0 4px; padding:16px 20px; border:1px solid var(--line-2); border-radius:var(--r-md);
+  background:linear-gradient(100deg, var(--gold-soft), var(--white) 70%);
+  transition:border-color var(--dur-micro) var(--easing), box-shadow var(--dur-micro) var(--easing);
+}
+.member-cta:hover{ border-color:var(--gold); box-shadow:var(--shadow-sm); }
+.member-cta-text{ font-size:.9rem; line-height:1.65; color:var(--ink-2); max-width:46ch; }
+.member-cta-text strong{ color:var(--ink); font-weight:600; }
+.member-cta-go{ color:var(--gold); font-weight:600; font-size:.9rem; white-space:nowrap; }
