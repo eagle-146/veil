@@ -317,13 +317,13 @@ function renderResponse(r) {
 document.getElementById('btn-restart')?.addEventListener('click', () => {
   textarea.value = '';
   updateCount();
-  goTo(1);
+  goTo(2);
 });
 
 document.getElementById('btn-amen')?.addEventListener('click', () => {
   textarea.value = '';
   updateCount();
-  goTo(1);
+  goTo(2);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
