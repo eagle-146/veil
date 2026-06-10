@@ -47,7 +47,23 @@ let pool = items;
 if (HAS) pool = pool.filter(it => it.s.includes(HAS));
 if (ENDONLY) pool = pool.filter(it => STOCK_END.test(it.s));
 
-if (STATS) {
+const DUPS = process.argv.includes('--dups');
+if (DUPS) {
+  const TH = parseFloat((process.argv.find(a => a.startsWith('--th=')) || '--th=0.5').slice(5));
+  const bg = s => { const n = s.replace(/\s+/g, ''), S = new Set(); for (let i = 0; i < n.length - 1; i++) S.add(n.slice(i, i + 2)); return S; };
+  const ov = (A, B) => { let c = 0; for (const x of A) if (B.has(x)) c++; return c / Math.min(A.size, B.size); };
+  const byCat = {};
+  for (const it of items) (byCat[it.k] = byCat[it.k] || []).push({ ...it, bg: bg(it.s) });
+  let pairs = 0;
+  for (const k in byCat) {
+    const a = byCat[k];
+    for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) {
+      const o = ov(a[i].bg, a[j].bg);
+      if (o >= TH) { pairs++; console.log(`[${k}] sim=${o.toFixed(2)}  ${a[i].f.replace(/confession-extra-|\.js/g, '')} ↔ ${a[j].f.replace(/confession-extra-|\.js/g, '')}`); console.log(`   A: ${a[i].s.slice(0, 78)}`); console.log(`   B: ${a[j].s.slice(0, 78)}\n`); }
+    }
+  }
+  console.log(`근접중복 쌍 ${pairs}개 (임계 ${TH}, [${FIELD}])`);
+} else if (STATS) {
   // 상투구·종결 패턴 집계
   const endMap = {}; let endTot = 0;
   const tailRe = /([가-힣]{2,6}(?:세요|보세요|합니다|습니다|십시오))\.?\s*$/;
