@@ -182,8 +182,7 @@ function renderGratitude() {
   if (gratYear == null) { gratYear = now.getFullYear(); gratMonth = now.getMonth(); }
   gratDates = monthDates(gratYear, gratMonth);
   const ti = gratDates.indexOf(todayStr());
-  gratOffset = ti >= 0 ? ti : 0;            // 이번 달이면 오늘, 아니면 1일에 포커스
-  gratFocusIdx = -1;
+  gratFocusIdx = ti >= 0 ? ti : 0;          // 이번 달이면 오늘, 아니면 1일 선택
 
   mount.innerHTML = `
     <div class="gr2-monthnav" id="gr2-monthnav">
@@ -192,26 +191,57 @@ function renderGratitude() {
       <button class="gr2-mn-btn" id="gr2-next" type="button" aria-label="다음 달">›</button>
       <button class="btn btn-text btn-sm" id="gr2-today" type="button">오늘</button>
     </div>
-    <div class="gr2-stage" id="gr2-stage">
-      <div class="gr2-world" id="gr2-world">
-        <div class="gr2-months" id="gr2-months"></div>
-        <div class="gr2-ring" id="gr2-ring"></div>
-        <span class="gr2-pin" aria-hidden="true"></span>
-        <div class="gr2-center" id="gr2-center"></div>
-      </div>
-    </div>
+    <div class="gcal" id="gcal"></div>
     <div class="panel" id="grat-editor"></div>`;
 
-  buildRing();
-  computeRingDims();
-  bindRing();
-  layoutRing();
+  buildCalendar();
   renderGratEditor();
 
   $('#gr2-prev')?.addEventListener('click', () => gratGoMonth(-1));
   $('#gr2-next')?.addEventListener('click', () => gratGoMonth(1));
-  $('#gr2-today')?.addEventListener('click', () => { const n = new Date(); gratYear = n.getFullYear(); gratMonth = n.getMonth(); renderGratitude(); });
+  $('#gr2-today')?.addEventListener('click', () => { if (commitGratEditor) commitGratEditor(); const n = new Date(); gratYear = n.getFullYear(); gratMonth = n.getMonth(); renderGratitude(); });
 }
+
+/* 달력 그리드 — 각 날 칸에 사진(없으면 색/빈칸). 칸을 누르면 그 날을 선택해 아래 에디터로. */
+function buildCalendar() {
+  const cal = $('#gcal'); if (!cal) return;
+  const data = getGrat(); const meta = getGratMeta(); const today = todayStr();
+  let html = WD.map(w => `<span class="gcal-wd">${w}</span>`).join('');
+  const startWd = new Date(gratYear, gratMonth, 1).getDay();
+  for (let b = 0; b < startWd; b++) html += `<span class="gcal-cell gcal-blank" aria-hidden="true"></span>`;
+  gratDates.forEach((ds, i) => {
+    const m = meta[ds] || {};
+    const has = (data[ds] || []).some(x => x.trim()) || !!m.photo;
+    const future = ds > today;
+    let style = '';
+    if (m.photo) style = `background-image:url('${m.photo}')`;
+    else if (has) style = `background:${GRAT_COLORS[(m.color || 0) % GRAT_COLORS.length]}`;
+    const cls = ['gcal-cell', 'gcal-day'];
+    if (m.photo) cls.push('has-photo');
+    if (has) cls.push('on');
+    if (ds === today) cls.push('today');
+    if (i === gratFocusIdx) cls.push('sel');
+    if (future) cls.push('future');
+    html += `<button class="${cls.join(' ')}" data-i="${i}" style="${style}" aria-label="${prettyDate(ds)}${has ? ' · 기록 있음' : ''}"><span class="gcal-num">${+ds.slice(8, 10)}</span>${(!m.photo && has) ? '<span class="gcal-dot" aria-hidden="true"></span>' : ''}</button>`;
+  });
+  cal.innerHTML = html;
+  cal.querySelectorAll('.gcal-day').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (commitGratEditor) commitGratEditor();   // 떠나는 날의 미저장 감사 자동 보존
+      gratFocusIdx = +btn.dataset.i;
+      buildCalendar();                             // 선택 표시 + 저장된 사진 반영
+      renderGratEditor();
+      scrollToGratEditor();
+    });
+  });
+}
+
+/* 에디터 '오늘로' 버튼 등에서 특정 날(인덱스)로 이동 — 다른 달이면 그 달로 전환 */
+gratNavigate = function (idx) {
+  if (commitGratEditor) commitGratEditor();
+  if (idx == null || idx < 0) { const n = new Date(); gratYear = n.getFullYear(); gratMonth = n.getMonth(); renderGratitude(); scrollToGratEditor(); return; }
+  gratFocusIdx = idx; buildCalendar(); renderGratEditor(); scrollToGratEditor();
+};
 
 function gratGoMonth(delta) {
   if (commitGratEditor) commitGratEditor();
@@ -501,7 +531,7 @@ function renderGratEditor() {
       <div class="gphoto-prev${pendingPhoto ? '' : ' empty'}" id="gphoto-prev" style="${pendingPhoto ? `background-image:url('${pendingPhoto}')` : ''}">${pendingPhoto ? '' : '사진 없음'}</div>
       <label class="btn btn-ghost btn-sm">사진 첨부<input type="file" accept="image/*" id="grat-file" hidden></label>
       <button class="btn btn-text btn-sm" id="grat-photo-del"${pendingPhoto ? '' : ' style="display:none"'}>사진 제거</button>
-      <span class="hint">사진을 넣으면 원의 그 날 칸이 사진으로 채워집니다.</span>
+      <span class="hint">사진을 넣으면 달력의 그 날 칸이 사진으로 채워집니다.</span>
     </div>
     <div class="grat-actions">
       <button class="btn btn-text btn-sm" id="grat-add">+ 감사 추가${premium ? '' : ' (무료 3개)'}</button>

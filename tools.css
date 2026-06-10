@@ -380,3 +380,28 @@ body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
 .gr2-mn-btn:hover { border-color: var(--gold); color: var(--gold); }
 .gr2-monthnav #gr2-today { margin-left: 4px; }
 .gr2-daylabel { font-size: .74rem; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+
+/* ───────────  감사일기 — 달력 그리드 (사진 칸 + hover 모션)  ─────────── */
+.gcal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; max-width: 980px; margin: 18px auto 28px; }
+.gcal-wd { text-align: center; font-size: .8rem; font-weight: 500; color: var(--ink-3); padding: 0 0 4px; }
+.gcal-cell { aspect-ratio: 4 / 3; border-radius: 12px; }
+.gcal-blank { visibility: hidden; }
+.gcal-day {
+  position: relative; padding: 0; cursor: pointer; overflow: hidden;
+  border: 1px solid var(--line); background-color: var(--bg-2);
+  background-size: cover; background-position: center; box-shadow: 0 1px 2px rgba(40,34,24,.05);
+  transition: transform .2s var(--easing), box-shadow .2s var(--easing), border-color .2s var(--easing);
+}
+.gcal-num { position: absolute; top: 7px; left: 9px; z-index: 2; font-size: .82rem; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.gcal-day.has-photo::before { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(0,0,0,.30), transparent 42%); }
+.gcal-day.has-photo .gcal-num { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.55); }
+.gcal-dot { position: absolute; right: 8px; bottom: 8px; z-index: 2; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+.gcal-day.today { border-color: var(--gold); }
+.gcal-day.today .gcal-num { color: var(--gold); }
+.gcal-day.today.has-photo .gcal-num { color: #fff; }
+.gcal-day.sel { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold), 0 8px 20px rgba(40,34,24,.16); }
+.gcal-day.future { opacity: .45; cursor: default; }
+.gcal-day:not(.future):hover { transform: translateY(-5px) scale(1.035); box-shadow: 0 12px 26px rgba(40,34,24,.2); z-index: 5; border-color: var(--gold-2); }
+.gcal-day:not(.future):active { transform: translateY(-1px) scale(1); }
+@media (prefers-reduced-motion: reduce) { .gcal-day { transition: none; } .gcal-day:not(.future):hover { transform: none; } }
+@media (max-width: 600px) { .gcal { gap: 6px; } .gcal-num { font-size: .72rem; top: 5px; left: 6px; } }
