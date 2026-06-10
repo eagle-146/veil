@@ -1670,3 +1670,38 @@ body.vauth-lock { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .hero-ed::after { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   POINTER MOTION · 2026-06-10  — subtle, on-brand. motion.js sets the
+   custom properties; the defaults below ARE the resting state, so with
+   no JS / reduced-motion / touch the page looks exactly as before.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Hero — glow drifts toward the cursor; stage gets a gentle parallax */
+.hero-ed { --hx: 50%; --hy: 47%; --px: 0; --py: 0; }
+.hero-ed::after { left: var(--hx); top: var(--hy); transition: opacity .4s var(--easing); }
+.he-stage { transform: translate3d(calc(var(--px) * 12px), calc(var(--py) * 7px), 0); will-change: transform; }
+
+/* CTA 'altar' — gold light beam gathers toward the cursor */
+.cta { --cta-mx: 50%; }
+.cta::before { background: radial-gradient(ellipse 40% 70% at var(--cta-mx) 0%, rgba(201,169,97,.22), transparent 70%); }
+
+/* Brand emblem — 3D tilt of the gate + its light follows the cursor */
+.brand-emblem { perspective: 760px; --ex: 0deg; --ey: 0deg; --gx: 0px; --gy: 0px; }
+.brand-emblem-mark { transform: rotateX(var(--ey)) rotateY(var(--ex)); transform-style: preserve-3d; transition: transform .25s var(--easing); }
+.brand-emblem-glow { transform: translate(calc(-50% + var(--gx)), calc(-58% + var(--gy))); transition: transform .25s var(--easing); }
+
+/* Feature & plan cards — tilt toward the cursor + soft light sheen */
+.feature { position: relative; }
+.feature, .plan { --mx: 50%; --my: 50%; --sheen: 0; transform-style: preserve-3d; }
+.feature::after, .plan::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
+  background: radial-gradient(360px circle at var(--mx) var(--my), rgba(201,169,97,.16), transparent 55%);
+  opacity: var(--sheen); transition: opacity .3s var(--easing);
+}
+.plan-featured::after { background: radial-gradient(360px circle at var(--mx) var(--my), rgba(201,169,97,.26), transparent 55%); }
+.feature.is-tilting, .plan.is-tilting { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .he-stage, .brand-emblem-mark, .brand-emblem-glow { transform: none !important; }
+}

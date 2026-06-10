@@ -105,7 +105,7 @@ function renderTier() {
 }
 
 /* ───────────  router  ─────────── */
-const VIEW_IDS = ['gratitude', 'qt', 'daily', 'prayer', 'bible', 'journal'];
+const VIEW_IDS = ['gratitude', 'qt', 'prayer', 'bible', 'journal'];  // 'daily'(매일의 말씀) 일단 비활성화
 function route() {
   let id = (location.hash || '#gratitude').slice(1);
   if (!VIEW_IDS.includes(id)) id = 'gratitude';
