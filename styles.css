@@ -1785,6 +1785,11 @@ body.vauth-lock { overflow: hidden; }
   .repent.solo .app-card{ padding:22px 18px 18px; }
 }
 
+/* nav — Claude식 드롭다운 캐럿 + 우측 CTA (색 불변) */
+.nav-links a .caret{ width:9px; height:9px; opacity:.55; margin-left:4px; vertical-align:middle; }
+.nav-cta .nav-pill{ margin-left:2px; }
+@media (max-width:820px){ .nav-cta .nav-pill{ display:none; } }
+
 /* 회개 응답 안 멤버십 유도 CTA */
 .member-cta{
   display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
