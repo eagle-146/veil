@@ -8,6 +8,9 @@
     },
     "api/prayer.js": {
       "maxDuration": 30
+    },
+    "api/bible.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [

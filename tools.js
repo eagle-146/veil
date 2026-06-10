@@ -50,13 +50,13 @@ const VERSE_THEMES = {
 };
 
 const QT_PLAN = [
-  { ref: '시편 1:1-3', text: '복 있는 사람은 악인들의 꾀를 따르지 아니하며 죄인들의 길에 서지 아니하며 오만한 자들의 자리에 앉지 아니하고 오직 여호와의 율법을 즐거워하여 그의 율법을 주야로 묵상하는도다' },
-  { ref: '마태복음 5:3-6', text: '심령이 가난한 자는 복이 있나니 천국이 그들의 것임이요 애통하는 자는 복이 있나니 그들이 위로를 받을 것임이요 온유한 자는 복이 있나니 그들이 땅을 기업으로 받을 것임이요' },
-  { ref: '요한복음 15:4-5', text: '내 안에 거하라 나도 너희 안에 거하리라 가지가 포도나무에 붙어 있지 아니하면 스스로 열매를 맺을 수 없음 같이 너희도 내 안에 있지 아니하면 그러하리라' },
-  { ref: '빌립보서 2:3-5', text: '아무 일에든지 다툼이나 허영으로 하지 말고 오직 겸손한 마음으로 각각 자기보다 남을 낫게 여기고 너희 안에 이 마음을 품으라 곧 그리스도 예수의 마음이니' },
-  { ref: '로마서 12:1-2', text: '너희 몸을 하나님이 기뻐하시는 거룩한 산 제물로 드리라 이는 너희가 드릴 영적 예배니라 너희는 이 세대를 본받지 말고 오직 마음을 새롭게 함으로 변화를 받아' },
-  { ref: '갈라디아서 5:22-23', text: '오직 성령의 열매는 사랑과 희락과 화평과 오래 참음과 자비와 양선과 충성과 온유와 절제니 이같은 것을 금지할 법이 없느니라' },
-  { ref: '시편 23:1-4', text: '여호와는 나의 목자시니 내게 부족함이 없으리로다 그가 나를 푸른 풀밭에 누이시며 쉴 만한 물 가로 인도하시는도다 내 영혼을 소생시키시고' },
+  { ref: '시편 1:1-3', text: '복 있는 사람은 악인들의 꾀를 따르지 아니하며 죄인들의 길에 서지 아니하며 오만한 자들의 자리에 앉지 아니하고 오직 여호와의 율법을 즐거워하여 그의 율법을 주야로 묵상하는도다', q: '이 본문에서 ‘복’의 조건은 무엇이며, 나의 ‘즐거워함’은 지금 어디에 있습니까?' },
+  { ref: '마태복음 5:3-6', text: '심령이 가난한 자는 복이 있나니 천국이 그들의 것임이요 애통하는 자는 복이 있나니 그들이 위로를 받을 것임이요 온유한 자는 복이 있나니 그들이 땅을 기업으로 받을 것임이요', q: '주님이 복되다 하신 모습 중, 지금 내게 가장 멀게 느껴지는 것은 무엇입니까?' },
+  { ref: '요한복음 15:4-5', text: '내 안에 거하라 나도 너희 안에 거하리라 가지가 포도나무에 붙어 있지 아니하면 스스로 열매를 맺을 수 없음 같이 너희도 내 안에 있지 아니하면 그러하리라', q: '내가 ‘주님 안에 거한다’는 것은 오늘 하루 어떤 모습으로 나타나야 합니까?' },
+  { ref: '빌립보서 2:3-5', text: '아무 일에든지 다툼이나 허영으로 하지 말고 오직 겸손한 마음으로 각각 자기보다 남을 낫게 여기고 너희 안에 이 마음을 품으라 곧 그리스도 예수의 마음이니', q: '내가 남보다 낫게 여기려 다투는 자리는 어디입니까? 그리스도의 마음은 어떻게 다릅니까?' },
+  { ref: '로마서 12:1-2', text: '너희 몸을 하나님이 기뻐하시는 거룩한 산 제물로 드리라 이는 너희가 드릴 영적 예배니라 너희는 이 세대를 본받지 말고 오직 마음을 새롭게 함으로 변화를 받아', q: '나는 이 세대의 무엇을 본받고 있습니까? 마음을 새롭게 하려면 무엇을 내려놓아야 합니까?' },
+  { ref: '갈라디아서 5:22-23', text: '오직 성령의 열매는 사랑과 희락과 화평과 오래 참음과 자비와 양선과 충성과 온유와 절제니 이같은 것을 금지할 법이 없느니라', q: '성령의 아홉 가지 열매 중, 지금 내 삶에 가장 자라야 할 것은 무엇입니까?' },
+  { ref: '시편 23:1-4', text: '여호와는 나의 목자시니 내게 부족함이 없으리로다 그가 나를 푸른 풀밭에 누이시며 쉴 만한 물 가로 인도하시는도다 내 영혼을 소생시키시고', q: '‘부족함이 없다’는 고백을 막고 있는 내 마음의 염려는 무엇입니까?' },
 ];
 
 /* 66 books: [name, chapters, group] */
@@ -385,6 +385,18 @@ function bindRing() {
     if (+c.dataset.i === gratHoverIdx) { popTarget = 0; run(); }
   });
 
+  // 키보드 접근성 — 좌우 화살표로 날짜 회전, Home으로 오늘, Enter로 그 날 일기 열기
+  stage.tabIndex = 0;
+  stage.setAttribute('role', 'application');
+  stage.setAttribute('aria-label', '감사일기 달력 — 좌우 화살표로 날짜를 옮기고, 엔터로 그 날의 일기를 엽니다');
+  stage.addEventListener('keydown', (e) => {
+    const base = Math.round(gratOffset);
+    if (e.key === 'ArrowLeft') { e.preventDefault(); springTo(base - 1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); springTo(base + 1); }
+    else if (e.key === 'Home') { e.preventDefault(); const ti = gratDates.indexOf(todayStr()); if (ti >= 0) { let diff = ((ti - gratOffset) % N + N) % N; if (diff > N / 2) diff -= N; springTo(gratOffset + diff); } }
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToGratEditor(); }
+  });
+
   // 카드 클릭 → 그 날을 탄성 스냅으로 가운데로 옮긴 뒤, 그 날의 감사일기로 이동
   ring.querySelectorAll('.gr2-card').forEach(card => {
     card.addEventListener('click', () => {
@@ -436,7 +448,7 @@ function renderGratEditor() {
   function drawItems() {
     itemsWrap.innerHTML = '';
     items.forEach((val, i) => {
-      const row = el(`<div class="grat-item"><span class="grat-no">${i + 1}</span><input type="text" value="${String(val).replace(/"/g, '&quot;')}" placeholder="감사한 일 ${i + 1}"/><button class="grat-del" title="삭제">✕</button></div>`);
+      const row = el(`<div class="grat-item"><span class="grat-no">${i + 1}</span><input type="text" value="${escapeHtml(String(val)).replace(/"/g, '&quot;')}" placeholder="감사한 일 ${i + 1}"/><button class="grat-del" title="삭제">✕</button></div>`);
       row.querySelector('input').addEventListener('input', e => items[i] = e.target.value);
       row.querySelector('.grat-del').addEventListener('click', () => { items.splice(i, 1); if (!items.length) items.push(''); drawItems(); });
       itemsWrap.appendChild(row);
@@ -478,6 +490,14 @@ function renderGratEditor() {
   });
 }
 function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+/* 클립보드 복사 — 보안 컨텍스트면 Clipboard API, 아니면 execCommand 폴백. 성공 여부(boolean) 반환. */
+function fallbackCopy(text) {
+  try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.focus(); ta.select(); const ok = document.execCommand('copy'); document.body.removeChild(ta); return ok; } catch { return false; }
+}
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopy(text));
+  return Promise.resolve(fallbackCopy(text));
+}
 
 /* ════════════  큐티 (QT)  ════════════ */
 const QT_KEY = 'veil.qt';
@@ -497,12 +517,12 @@ function renderQT() {
   mount.innerHTML = `
     <div class="panel">
       <h2>오늘의 본문</h2>
-      <p class="panel-sub">매일성경 식 4단계 묵상 · ${dateLabel(today)}</p>
+      <p class="panel-sub">관찰·묵상·적용·기도 4단계 묵상 · ${dateLabel(today)}</p>
       <div class="qt-passage">
         <div class="qt-ref">${passage.ref}</div>
         <blockquote>${passage.text}</blockquote>
       </div>
-      ${premium ? `<div class="upsell" style="background:linear-gradient(135deg,#F7F8F5,var(--bg-2));border-color:var(--sage)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="color:var(--sage)"><path d="M12 3.5c2.6 3.1 4.6 5.4 4.6 8.8a4.6 4.6 0 1 1-9.2 0C7.4 8.9 9.4 6.6 12 3.5Z"/></svg><div class="upsell-text"><strong>묵상 도우미</strong> — 본문 해설과 묵상 질문이 함께 제공됩니다.<p>“이 본문에서 ‘복’의 조건은 무엇이며, 나의 ‘즐거워함’은 어디에 있습니까?”</p></div></div>` : ''}
+      ${premium ? `<div class="upsell" style="background:linear-gradient(135deg,#F7F8F5,var(--bg-2));border-color:var(--sage)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="color:var(--sage)"><path d="M12 3.5c2.6 3.1 4.6 5.4 4.6 8.8a4.6 4.6 0 1 1-9.2 0C7.4 8.9 9.4 6.6 12 3.5Z"/></svg><div class="upsell-text"><strong>묵상 도우미</strong> — 본문 해설과 묵상 질문이 함께 제공됩니다.<p>“${escapeHtml(passage.q)}”</p></div></div>` : ''}
       <div id="qt-steps"></div>
       <div class="grat-actions">
         <button class="btn btn-gold btn-sm" id="qt-save">큐티 저장</button>
@@ -513,7 +533,7 @@ function renderQT() {
 
   const wrap = $('#qt-steps', mount);
   steps.forEach(s => {
-    const node = el(`<div class="qt-step"><div class="qt-step-head"><span class="qt-step-no">${s.no}</span><span class="qt-step-name">${s.name}</span><span class="qt-step-guide">${s.guide}</span></div><div class="field" style="margin:0"><textarea data-k="${s.key}" placeholder="${s.name}을(를) 적어 보세요">${escapeHtml(saved[s.key]||'')}</textarea></div></div>`);
+    const node = el(`<div class="qt-step"><div class="qt-step-head"><span class="qt-step-no">${s.no}</span><span class="qt-step-name">${s.name}</span><span class="qt-step-guide">${s.guide}</span></div><div class="field" style="margin:0"><textarea data-k="${s.key}" placeholder="${s.name} 내용을 여기에 적어 보세요">${escapeHtml(saved[s.key]||'')}</textarea></div></div>`);
     wrap.appendChild(node);
   });
   $('#qt-save', mount).addEventListener('click', () => {
@@ -651,7 +671,7 @@ function renderPrayerOut(text, demo) {
     <span class="hint" style="align-self:center">${hint}</span></div></div>`;
 }
 function bindPrayerOut(mount) {
-  const c = $('#prayer-copy', mount); if (c) c.addEventListener('click', () => { navigator.clipboard?.writeText($('.prayer-output p', mount).textContent); c.textContent = '복사됨 ✓'; setTimeout(()=>c.textContent='복사하기',1500); });
+  const c = $('#prayer-copy', mount); if (c) c.addEventListener('click', async () => { const ok = await copyText($('.prayer-output p', mount).textContent); c.textContent = ok ? '복사됨 ✓' : '복사 실패 — 직접 선택해 복사하세요'; setTimeout(()=>c.textContent='복사하기',1800); });
   const r = $('#prayer-regen', mount); if (r) r.addEventListener('click', () => $('#prayer-gen', mount).click());
 }
 function composePrayer(items) {
@@ -672,7 +692,7 @@ function renderJournal() {
     mount.innerHTML = `<div class="panel journal-empty">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg>
       <h2>로그인이 필요해요</h2>
-      <p class="panel-sub">회개 일기는 계정에 보관됩니다. 로그인하면 내가 남긴 기록을 다시 펴 볼 수 있어요. (회개 내용은 이 기기 안에만 저장됩니다.)</p>
+      <p class="panel-sub">로그인하면 내가 남긴 회개 일기를 계정에 보관해 다시 펴 볼 수 있어요. ‘일기에 저장’을 누르기 전에는 어디에도 보관되지 않습니다.</p>
       <button class="btn btn-gold btn-sm" id="journal-login">로그인 / 가입</button>
     </div>`;
     const b = $('#journal-login', mount); if (b) b.addEventListener('click', () => Veil.auth.openModal('login'));
@@ -689,7 +709,7 @@ function renderJournal() {
         ? `<div class="journal-list">${list.map((e, i) => `
             <div class="journal-entry">
               <div class="je-head"><span class="je-cat">${escapeHtml(e.category || '회개')}</span><span class="je-date">${escapeHtml(e.date || '')}</span></div>
-              <p class="je-text">${escapeHtml(e.confession || '')}</p>
+              <p class="je-text" style="white-space:pre-wrap">${escapeHtml(e.confession || '')}</p>
               ${e.verseRef ? `<div class="je-verse">받은 말씀 · ${escapeHtml(e.verseRef)}</div>` : ''}
               <button class="je-del" data-i="${i}" title="삭제">✕</button>
             </div>`).join('')}</div>`
@@ -704,6 +724,20 @@ function renderJournal() {
 const BIBLE_KEY = 'veil.bible';
 function getBible() { return store.get(BIBLE_KEY, {}); }   // { '창세기': [1,2,3...] }
 function bookProgress(name) { const ch = (getBible()[name] || []).length; const total = BIBLE.find(b => b[0] === name)[1]; return { ch, total, pct: ch / total }; }
+/* 본문 조회: 번들 샘플 → 서버리스 프록시(/api/bible, getBible) 순. 장 단위로 캐시한다. */
+const verseCache = {};   // { '시편-23': ['1절', '2절', ...] }
+async function fetchVerses(name, ch) {
+  const key = `${name}-${ch}`;
+  if (verseCache[key]) return verseCache[key];
+  const sample = window.BIBLE_TEXT && window.BIBLE_TEXT[name] && window.BIBLE_TEXT[name][ch];
+  if (sample) return (verseCache[key] = sample);            // 번들 샘플 우선(오프라인·무비용)
+  const book = BIBLE.findIndex(b => b[0] === name) + 1;     // 정경 순서 = getBible 책 번호
+  if (!book) throw new Error('unknown book');
+  const r = await fetch(`/api/bible?book=${book}&chapter=${ch}`);
+  if (!r.ok) throw new Error(`bible api ${r.status}`);
+  const { verses } = await r.json();
+  return (verseCache[key] = verses || []);
+}
 function renderBible() {
   const premium = tier.isPremium();
   const mount = $('#bible-mount'); if (!mount) return;
@@ -784,21 +818,18 @@ function openBook(name) {
   }
   function renderReader() {
     const reader = $('#bp-reader', panel);
-    const verses = (window.BIBLE_TEXT && window.BIBLE_TEXT[name] && window.BIBLE_TEXT[name][cur]) || null;
     const isRead = read.has(cur);
     reader.innerHTML = `
       <div class="bp-reader-head">
         <span class="bp-reader-title">${name} ${cur}장</span>
         <button class="btn btn-ghost btn-sm bp-readtoggle ${isRead ? 'is-read' : ''}" id="bp-readtoggle">${isRead ? '✓ 읽음' : '읽음으로 표시'}</button>
       </div>
-      ${verses
-        ? `<div class="bp-verses">${verses.map((v, i) => `<span class="v"><span class="vn">${i+1}</span>${escapeHtml(v)}</span>`).join('')}</div>`
-        : `<p class="bp-empty">이 장의 본문은 곧 제공됩니다.<br/>(현재는 일부 장만 본문을 제공하며, 전체 66권 본문은 라이선스 연동 후 추가됩니다.)</p>`}
+      <div class="bp-versebox" id="bp-versebox"><p class="bp-loading">본문을 불러오는 중…</p></div>
       <div class="bp-nav">
         <button class="btn btn-text btn-sm" id="bp-prev" ${cur <= 1 ? 'disabled' : ''}>← 이전 장</button>
         <button class="btn btn-text btn-sm" id="bp-next" ${cur >= total ? 'disabled' : ''}>다음 장 →</button>
       </div>
-      <p class="bp-source">샘플 본문 · 개역개정 (전체 본문은 대한성서공회 라이선스 연동 후 제공)</p>`;
+      <p class="bp-source">개역성경(개역한글 계열) · getBible 공개 본문 · 정식 출시 시 번역본 라이선스 확인</p>`;
     $('#bp-readtoggle', panel).addEventListener('click', () => {
       read.has(cur) ? read.delete(cur) : read.add(cur);
       saveBook(name, read); paintCells(); refreshMeta(); renderReader();
@@ -806,13 +837,23 @@ function openBook(name) {
     const prev = $('#bp-prev', panel), next = $('#bp-next', panel);
     if (prev) prev.addEventListener('click', () => selectChapter(cur - 1));
     if (next) next.addEventListener('click', () => selectChapter(cur + 1));
+    loadVerses(cur);
+  }
+  async function loadVerses(ch) {
+    let verses = null;
+    try { verses = await fetchVerses(name, ch); } catch (e) { verses = null; }
+    if (ch !== cur) return;                                  // 그새 다른 장으로 이동했으면 폐기
+    const box = $('#bp-versebox', panel); if (!box) return;
+    box.innerHTML = verses && verses.length
+      ? `<div class="bp-verses">${verses.map((v, i) => `<span class="v"><span class="vn">${i+1}</span>${escapeHtml(v)}</span>`).join('')}</div>`
+      : `<p class="bp-empty">본문을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>`;
   }
   function selectChapter(ch) {
     cur = Math.max(1, Math.min(total, ch));
     paintCells(); renderReader();
     $('#bp-reader', panel).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
-  $('#bp-all', panel).addEventListener('click', () => { for (let i=1;i<=total;i++) read.add(i); saveBook(name, read); paintCells(); refreshMeta(); renderReader(); });
+  $('#bp-all', panel).addEventListener('click', () => { if (!confirm(`${name} ${total}장 전체를 ‘읽음’으로 표시할까요?`)) return; for (let i=1;i<=total;i++) read.add(i); saveBook(name, read); paintCells(); refreshMeta(); renderReader(); });
   $('#bp-clear', panel).addEventListener('click', () => { read.clear(); saveBook(name, read); paintCells(); refreshMeta(); renderReader(); });
   $('#bp-close', panel).addEventListener('click', closeBook);
 
@@ -831,8 +872,14 @@ document.addEventListener('DOMContentLoaded', () => {
     Veil.auth.onChange(() => { renderTier(); route(); });
   }
   route();
+  // 데모 토글: 누구나 무료로 프리미엄을 켜는 버튼이라, 개발 모드(?dev=1 또는 저장된 플래그)에서만 노출.
   const demo = $('#demo-toggle');
-  if (demo) demo.addEventListener('click', () => { tier.set(!tier.isPremium()); renderTier(); route(); });
+  const devMode = location.search.includes('dev=1') || localStorage.getItem('veil.dev') === '1';
+  if (location.search.includes('dev=1')) localStorage.setItem('veil.dev', '1');
+  if (demo) {
+    if (devMode) demo.addEventListener('click', () => { tier.set(!tier.isPremium()); renderTier(); route(); });
+    else demo.style.display = 'none';
+  }
   const bd = $('#book-backdrop'); if (bd) bd.addEventListener('click', closeBook);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBook(); });
 });

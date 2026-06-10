@@ -282,6 +282,7 @@ body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
 .bp-verses .v { display: block; margin-bottom: 7px; }
 .bp-verses .vn { color: var(--gold); font-size: .7rem; font-weight: 700; vertical-align: 2px; margin-right: 7px; }
 .bp-empty { color: var(--ink-3); font-size: var(--fs-cap); text-align: center; padding: 26px 10px; line-height: 1.7; background: var(--bg-2); border-radius: var(--r-md); }
+.bp-loading { color: var(--muted); font-size: var(--fs-cap); text-align: center; padding: 26px 10px; }
 .bp-nav { display: flex; justify-content: space-between; margin-top: 14px; }
 .bp-source { font-size: .72rem; color: var(--muted); margin: 14px 0 0; text-align: center; }
 
