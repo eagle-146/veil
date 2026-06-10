@@ -129,6 +129,32 @@ const tierState = {
   setPremium(on) { localStorage.setItem('golbang.tier', on ? 'premium' : 'free'); },
 };
 
+/* 동행(유료) 멤버 전용 — 고백을 서버 AI(/api/meditate, Gemini)로 보내 맞춤 묵상을 받는다.
+   ⚠ 프라이버시: 무료 응답은 기기 밖으로 나가지 않는다. 이 호출은 멤버가 결과 화면에서
+   '직접 버튼을 눌렀을 때만'(명시적 동의) 실행된다. 위기 care 안내는 로컬에서 계산해 항상 유지. */
+async function fetchPremiumMeditation(text) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000);
+  try {
+    const res = await fetch('/api/meditate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confession: text }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if (!d || !d.meditation || !d.prayer || !d.verse || !d.verse.text) throw new Error('malformed');
+    return {
+      category: d.category || (lastResp && lastResp.category) || '회개',
+      verse: d.verse,
+      meditation: d.meditation,
+      prayer: d.prayer,
+      application: d.application || null,
+    };
+  } finally { clearTimeout(timer); }
+}
+
 /* ─────────  STEP NAVIGATION  ───────── */
 const steps = document.querySelectorAll('.app-step');
 const appCard = document.querySelector('.app-card');
@@ -253,8 +279,32 @@ function renderResponse(r) {
 
   const tierBanner = document.getElementById('tier-banner');
   const icoGate = '<svg width="15" height="15" viewBox="0 0 64 64" fill="currentColor" style="vertical-align:-3px;margin-right:7px"><path d="M14 13 H50 a2.4 2.4 0 0 1 2.34 2.92 L49.3 49.1 A2.4 2.4 0 0 1 46.96 51 H42 a2 2 0 0 1 -1.95 -2.44 C41.6 42 33.9 24.6 32 21 C30.1 24.6 22.4 42 23.95 48.56 A2 2 0 0 1 22 51 H17.04 A2.4 2.4 0 0 1 14.7 49.1 L11.66 15.92 A2.4 2.4 0 0 1 14 13 Z"/></svg>';
-  tierBanner.className = 'response-tier tier-free';
-  tierBanner.innerHTML = `${icoGate}<strong>${r.category}</strong>의 자리. 이 은혜를 <a href="tools.html#gratitude" style="color:var(--gold);text-decoration:underline;">감사일기</a>에 남겨 두면 다시 펴 볼 수 있어요.`;
+  const icoStar = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:7px"><path d="M12 2.2l2.3 6.5 6.7.3-5.3 4.2 1.9 6.6L12 16.3 6.4 20.1l1.9-6.6L3 9.3l6.7-.3L12 2.2z"/></svg>';
+  const premiumBlock = document.getElementById('premium-ai');
+  const aiBtn = document.getElementById('btn-ai-meditate');
+  const aiStatus = document.getElementById('ai-status');
+
+  if (r.tier === 'premium') {
+    tierBanner.className = 'response-tier tier-premium';
+    tierBanner.innerHTML = `${icoStar}<strong>${r.category}</strong> · 동행 멤버를 위한 AI 맞춤 묵상이에요.`;
+    if (premiumBlock) {
+      premiumBlock.hidden = false;
+      if (aiBtn) aiBtn.hidden = true;                       // 이미 AI 묵상을 받음 → 버튼 숨김
+      if (aiStatus) { aiStatus.hidden = false; aiStatus.className = 'premium-ai-status is-done'; aiStatus.textContent = '✓ 이 고백을 깊이 읽고 빚어진 묵상입니다.'; }
+    }
+  } else {
+    tierBanner.className = 'response-tier tier-free';
+    tierBanner.innerHTML = `${icoGate}<strong>${r.category}</strong>의 자리. 이 은혜를 <a href="tools.html#gratitude" style="color:var(--gold);text-decoration:underline;">감사일기</a>에 남겨 두면 다시 펴 볼 수 있어요.`;
+    if (premiumBlock) {
+      if (tierState.isPremium()) {                          // 멤버 → 로컬 응답 위에 AI 묵상 받기 제안
+        premiumBlock.hidden = false;
+        if (aiBtn) { aiBtn.hidden = false; aiBtn.disabled = false; }
+        if (aiStatus) { aiStatus.hidden = true; aiStatus.textContent = ''; aiStatus.className = 'premium-ai-status'; }
+      } else {
+        premiumBlock.hidden = true;                         // 무료 사용자 → AI 옵션 미노출
+      }
+    }
+  }
 
   const careEl = document.getElementById('resp-care');
   if (careEl) {
@@ -299,6 +349,24 @@ document.getElementById('btn-save')?.addEventListener('click', () => {
   btn.innerHTML = '✓ 계정에 저장됨';
   setTimeout(() => { btn.innerHTML = orig; }, 1900);
   updateJournalAcct();
+});
+
+/* ─────────  PREMIUM AI MEDITATION (동행 멤버, 명시적 동의 후 호출)  ───────── */
+document.getElementById('btn-ai-meditate')?.addEventListener('click', async () => {
+  if (!lastText) return;
+  const aiBtn = document.getElementById('btn-ai-meditate');
+  const aiStatus = document.getElementById('ai-status');
+  if (aiBtn) aiBtn.disabled = true;
+  if (aiStatus) { aiStatus.hidden = false; aiStatus.className = 'premium-ai-status'; aiStatus.textContent = '주님 앞에서 이 고백을 깊이 읽고 묵상을 빚고 있어요…'; }
+  try {
+    const ai = await fetchPremiumMeditation(lastText);
+    const merged = { ...ai, tier: 'premium', care: (lastResp && lastResp.care) || null };  // 위기 care는 로컬값 유지
+    lastResp = merged;                                   // 일기 저장도 새 응답 기준
+    renderResponse(merged);
+  } catch (e) {
+    if (aiStatus) { aiStatus.className = 'premium-ai-status is-error'; aiStatus.textContent = '지금은 AI 묵상을 불러오지 못했어요. 기기 안의 말씀으로도 충분히 주님과 만나실 수 있습니다.'; }
+    if (aiBtn) aiBtn.disabled = false;
+  }
 });
 
 /* ─────────  PLAN BUTTONS (mock checkout)  ───────── */

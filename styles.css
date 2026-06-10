@@ -634,6 +634,28 @@ body.nav-open { overflow: hidden; }
   border: 1px solid var(--gold);
 }
 
+.premium-ai {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 0;
+}
+.premium-ai-note {
+  margin: 0;
+  font-size: .76rem;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+.premium-ai-status {
+  margin: 2px 0 0;
+  font-size: var(--fs-cap);
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+.premium-ai-status.is-done { color: var(--ink); }
+.premium-ai-status.is-error { color: var(--ink-3); }
+
 .response-actions {
   flex-wrap: wrap;
   justify-content: space-between;
