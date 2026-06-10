@@ -5,7 +5,9 @@
  * Calls the Gemini REST API with fetch (no SDK dependency).
  *
  * Env: GEMINI_API_KEY (https://aistudio.google.com/apikey), optional GEMINI_MODEL.
+ *      VEIL_GEMINI_PAID_TIER — 'true'가 아니면 감사일기를 Gemini로 보내지 않고 차단(안전장치).
  * Privacy: use the PAID Gemini tier so entries are not used to improve models.
+ * 무료 티어는 입력을 학습에 쓸 수 있어 → 결제(유료 티어) 확인 전까지 기본 차단(default-deny).
  * Production: verify subscription, rate-limit (e.g. 7/week), set a spend cap.
  */
 
@@ -42,6 +44,11 @@ export default async function handler(req, res) {
   if (origin) {
     try { if (req.headers.host && new URL(origin).host !== req.headers.host) return res.status(403).json({ error: 'Forbidden' }); }
     catch { /* malformed origin — ignore */ }
+  }
+
+  // ── 프라이버시 안전장치(default-deny) ── 유료 티어 확인 전까지 감사일기를 Gemini로 보내지 않는다.
+  if (String(process.env.VEIL_GEMINI_PAID_TIER).toLowerCase() !== 'true') {
+    return res.status(503).json({ error: 'AI 기도문이 아직 활성화되지 않았습니다.', code: 'tier_not_confirmed' });
   }
 
   try {

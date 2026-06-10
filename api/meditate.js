@@ -5,11 +5,14 @@
  * (no SDK dependency). Returns a verse + meditation + prayer + application.
  *
  * Environment variables:
- *   GEMINI_API_KEY   — Google AI Studio key (https://aistudio.google.com/apikey)
- *   GEMINI_MODEL     — optional, default 'gemini-2.0-flash' (use '-lite' for cheapest)
+ *   GEMINI_API_KEY          — Google AI Studio key (https://aistudio.google.com/apikey)
+ *   GEMINI_MODEL            — optional, default 'gemini-2.5-flash-lite' (cheapest)
+ *   VEIL_GEMINI_PAID_TIER   — 안전장치. 'true'가 아니면 고백을 Gemini로 보내지 않고 차단한다.
+ *                             Google Cloud 결제(유료 티어)를 켠 뒤에만 'true'로 설정할 것.
  *
  * Privacy: confession content is sensitive. Use the PAID Gemini tier (enable
  * billing) so inputs are NOT used to improve models. The free tier may be.
+ * 무료 티어는 입력을 학습에 쓸 수 있어 veil의 프라이버시 약속과 충돌 → 기본 차단(default-deny).
  * Production: verify subscription, rate-limit, and set a spend cap.
  */
 
@@ -62,6 +65,13 @@ export default async function handler(req, res) {
   if (origin) {
     try { if (req.headers.host && new URL(origin).host !== req.headers.host) return res.status(403).json({ error: 'Forbidden' }); }
     catch { /* malformed origin — ignore */ }
+  }
+
+  // ── 프라이버시 안전장치(default-deny) ──
+  // 유료(결제) 티어를 VEIL_GEMINI_PAID_TIER='true'로 명시적으로 확인하기 전까지 AI 호출을 차단한다.
+  // 무료 티어는 입력(고백)을 모델 학습에 쓸 수 있으므로, 실제 고백이 Gemini로 전송되지 않도록 막는다.
+  if (String(process.env.VEIL_GEMINI_PAID_TIER).toLowerCase() !== 'true') {
+    return res.status(503).json({ error: 'AI 묵상이 아직 활성화되지 않았습니다.', code: 'tier_not_confirmed' });
   }
 
   try {
