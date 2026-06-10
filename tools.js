@@ -521,7 +521,7 @@ function renderGratEditor() {
   });
   $('#grat-file', editor).addEventListener('change', e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    resizePhoto(f, 520, (url) => {
+    resizePhoto(f, 720, (url) => {
       if (!url) return;
       pendingPhoto = url;
       const prev = $('#gphoto-prev', editor);

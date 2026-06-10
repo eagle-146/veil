@@ -35,10 +35,31 @@
       <span class="brand-name">Veil</span>
     </a>
     <nav class="nav-links" aria-label="주요 메뉴">
-      <a href="membership.html">Veil 만나보기 <svg class="caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></a>
-      <a href="tools.html">은혜의 도구 <svg class="caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></a>
-      <a href="membership.html">멤버십 <svg class="caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></a>
-      <a href="#">간증</a>
+      <div class="nav-item">
+        <button type="button" class="nav-top" aria-haspopup="true" aria-expanded="false">Veil 만나보기 <svg class="caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <div class="nav-menu">
+          <a href="about.html#story">이름에 담긴 뜻</a>
+          <a href="about.html#faq">자주 묻는 질문</a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <button type="button" class="nav-top" aria-haspopup="true" aria-expanded="false">은혜의 도구 <svg class="caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <div class="nav-menu">
+          <a href="tools.html#gratitude">감사일기</a>
+          <a href="tools.html#qt">큐티</a>
+          <a href="tools.html#daily">매일의 말씀</a>
+          <a href="tools.html#prayer">감사 기도문</a>
+          <a href="tools.html#bible">성경 책장</a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <button type="button" class="nav-top" aria-haspopup="true" aria-expanded="false">멤버십 <svg class="caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <div class="nav-menu">
+          <a href="membership.html">요금제</a>
+          <a href="membership.html#offering">후원</a>
+        </div>
+      </div>
+      <a href="testimony.html" class="nav-flat">간증</a>
     </nav>
     <div class="nav-cta">
       <span id="auth-slot" class="auth-slot"></span>
@@ -58,10 +79,10 @@
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 5l12 12M17 5L5 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
   </button>
   <nav class="nav-sheet-links" aria-label="모바일 메뉴">
-    <a href="membership.html">Veil 만나보기</a>
+    <a href="about.html">Veil 만나보기</a>
     <a href="tools.html">은혜의 도구</a>
     <a href="membership.html">멤버십</a>
-    <a href="#">간증</a>
+    <a href="testimony.html">간증</a>
   </nav>
   <div class="nav-sheet-cta">
     <a href="#repent" class="btn btn-primary btn-block btn-lg">시작하기</a>
@@ -310,5 +331,6 @@
 <script src="confession-extra-r19.js"></script>
 <script src="confession-extra-r20.js"></script>
 <script src="script.js"></script>
+<script src="nav.js"></script>
 </body>
 </html>

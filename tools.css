@@ -136,9 +136,16 @@ body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
 .streak-num { font-family: var(--serif); font-size: 2rem; font-weight: 600; color: var(--gold); line-height: 1; }
 .streak-label { font-size: var(--fs-cap); color: var(--ink-3); }
 .grat-date { font-family: var(--serif); color: var(--ink-2); font-size: 1rem; }
-.grat-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.grat-item .grat-no { width: 26px; height: 26px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--gold-soft); color: #8C6E4A; font-size: .8rem; font-weight: 600; font-family: var(--serif); }
-.grat-item input { flex: 1; }
+.grat-item { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.grat-item .grat-no { width: 32px; height: 32px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--gold-soft); color: #A85A3E; font-size: .9rem; font-weight: 600; font-family: var(--serif); }
+.grat-item input {
+  flex: 1; width: 100%; font: inherit; font-size: 1.05rem; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md);
+  padding: 16px 18px; line-height: 1.5;
+  transition: border-color var(--dur-micro) var(--easing), background var(--dur-micro) var(--easing), box-shadow var(--dur-micro) var(--easing);
+}
+.grat-item input::placeholder { color: var(--muted); }
+.grat-item input:focus { outline: none; border-color: var(--gold); background: var(--white); box-shadow: var(--focus-ring); }
 .grat-item .grat-del { background: none; border: none; color: var(--muted); padding: 6px; line-height: 0; }
 .grat-item .grat-del:hover { color: var(--ink); }
 .grat-actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
@@ -327,8 +334,9 @@ body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
 .grat-ed-head h2 { margin: 0; }
 .grat-today-chip { font-size: .7rem; font-weight: 600; color: #fff; background: var(--gold); border-radius: 999px; padding: 2px 9px; }
 .grat-photo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0 2px; }
-.gphoto-prev { width: 64px; height: 64px; border-radius: var(--r-md); background-size: cover; background-position: center; border: 1px solid var(--line); flex: none; }
-.gphoto-prev.empty { display: inline-flex; align-items: center; justify-content: center; border-style: dashed; color: var(--muted); font-size: .68rem; background: var(--bg-2); }
+.gphoto-prev { flex: 0 0 100%; width: 100%; max-width: 460px; height: 260px; border-radius: var(--r-lg); background-size: cover; background-position: center; border: 1px solid var(--line); }
+.gphoto-prev.empty { display: flex; align-items: center; justify-content: center; border-style: dashed; color: var(--muted); font-size: .9rem; background: var(--bg-2); }
+@media (max-width: 560px) { .gphoto-prev { height: 200px; } }
 .grat-photo .hint { font-size: .78rem; color: var(--muted); flex: 1 1 180px; }
 
 @media (max-width: 560px) {
