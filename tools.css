@@ -356,9 +356,9 @@ body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
 .gr2-world { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
 .gr2-ring, .gr2-months { position: absolute; inset: 0; transform-style: preserve-3d; }
 .gr2-card {
-  position: absolute; left: 50%; top: 50%; width: 34px; height: 58px; padding: 0; border: 0; border-radius: 3.5px;
+  position: absolute; left: 50%; top: 50%; width: 62px; height: 94px; padding: 0; border: 0; border-radius: 8px;
   background-color: #ECE6DA; background-size: cover; background-position: center;
-  box-shadow: 0 1px 3px rgba(40, 34, 24, .10); cursor: pointer; will-change: transform, opacity; transform-origin: 50% 50%;
+  box-shadow: 0 2px 6px rgba(40, 34, 24, .12); cursor: pointer; will-change: transform, opacity; transform-origin: 50% 50%;
 }
 .gr2-card.on { box-shadow: 0 2px 6px rgba(40, 34, 24, .16); }
 .gr2-card:not(.on) { background: #EFEAE0; }
@@ -372,3 +372,11 @@ body.tools-body::after { opacity: .04; }       /* calmer grain in the app */
 .gr2c-media.empty { display: flex; align-items: center; justify-content: center; background: var(--bg-2); color: var(--muted); font-size: .85rem; box-shadow: none; border: 1px dashed var(--line-2); }
 .gr2c-text { margin-top: 14px; font-family: var(--serif); color: var(--ink-2); font-size: .96rem; line-height: 1.6; }
 @media (max-width: 760px) { .gr2c-media { width: 220px; height: 130px; } .gr2c-date { font-size: 1.35rem; } }
+
+/* 월 단위 네비게이션 + 날짜 라벨 */
+.gr2-monthnav { display: flex; align-items: center; justify-content: center; gap: 14px; max-width: 1200px; margin: 4px auto 2px; }
+.gr2-mn-title { font-family: var(--serif); font-size: 1.35rem; color: var(--ink); min-width: 120px; text-align: center; }
+.gr2-mn-btn { width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--line); background: var(--white); color: var(--ink-2); font-size: 1.3rem; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: border-color var(--dur-micro) var(--easing), color var(--dur-micro) var(--easing); }
+.gr2-mn-btn:hover { border-color: var(--gold); color: var(--gold); }
+.gr2-monthnav #gr2-today { margin-left: 4px; }
+.gr2-daylabel { font-size: .74rem; font-variant-numeric: tabular-nums; color: var(--ink-3); }
