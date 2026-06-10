@@ -79,16 +79,16 @@ const BIBLE = [
   ['요한계시록',22,'rev'],
 ];
 const GROUP = {
-  pent:  { name: '모세오경', hue: '#C9A961' },
-  hist:  { name: '역사서', hue: '#A88762' },
-  poet:  { name: '시가서', hue: '#C58A6B' },
-  major: { name: '대선지서', hue: '#8A93A0' },
-  minor: { name: '소선지서', hue: '#8A9A8B' },
-  gospel:{ name: '복음서', hue: '#D4B36A' },
-  acts:  { name: '사도행전', hue: '#A88762' },
-  paul:  { name: '바울서신', hue: '#6F8E86' },
-  gen:   { name: '일반서신', hue: '#B08D5B' },
-  rev:   { name: '요한계시록', hue: '#9A6B6B' },
+  pent:  { name: '모세오경', hue: '#E6B23E' },   // 밝은 금
+  hist:  { name: '역사서', hue: '#E28E45' },     // 밝은 주황
+  poet:  { name: '시가서', hue: '#EC6F57' },     // 밝은 코랄
+  major: { name: '대선지서', hue: '#4E9FE3' },   // 밝은 파랑
+  minor: { name: '소선지서', hue: '#5FBA6E' },   // 밝은 초록
+  gospel:{ name: '복음서', hue: '#ECC23F' },     // 밝은 노랑
+  acts:  { name: '사도행전', hue: '#EE9440' },   // 밝은 호박
+  paul:  { name: '바울서신', hue: '#3CB6A8' },   // 밝은 청록
+  gen:   { name: '일반서신', hue: '#8E78D8' },   // 밝은 보라
+  rev:   { name: '요한계시록', hue: '#DC6E8A' }, // 밝은 로즈
 };
 
 /* ───────────  tier UI  ─────────── */
@@ -834,27 +834,36 @@ function renderBible() {
     const hue = GROUP[g].hue;
     const h = Math.round(94 + Math.min(total, 60) * 0.95);
     const done = r >= total;
-    return `<div class="spine ${done?'done':''}" data-book="${name}" role="button" tabindex="0" aria-label="${name} · ${r}/${total}장 읽음" style="height:${h}px;background:${hexA(hue,0.13)}" title="${name} · ${r}/${total}장">
-        <div class="spine-fill" style="height:${pct}%;background:${done?hue:hexA(hue,0.75)}"></div>
-        <span class="spine-name">${name}</span></div>`;
+    return `<div class="spine ${done?'done':''}" data-book="${name}" role="button" tabindex="0" aria-label="${name} · ${r}/${total}장 읽음" style="height:${h}px;background:${hexA(hue,0.30)};border-color:${hexA(hue,0.45)}" title="${name} · ${r}/${total}장">
+        <div class="spine-fill" style="height:${pct}%;background:${done?hue:hexA(hue,0.82)}"></div>
+        <span class="spine-name" style="color:#534b41;text-shadow:0 1px 1px rgba(255,255,255,.45)">${name}</span></div>`;
   };
-  // 가로로 길지 않게 한 줄당 권수를 정해 여러 책장 줄로 쌓는다(구약 13×3 + 신약 14·13 = 5줄).
-  const renderTestament = (label, slice, perRow) => {
-    let rows = '';
-    for (let i = 0; i < slice.length; i += perRow) rows += `<div class="shelf">${slice.slice(i, i + perRow).map(spineHtml).join('')}</div>`;
-    return `<div class="testament-label">${label}</div>${rows}`;
+  // 색(장르)별로 칸막이를 세운 칸에 책을 담는다. 칸들이 가로로 늘어서며 박스를 넓게 채운다.
+  const binHtml = (g, books) => {
+    const hue = GROUP[g].hue;
+    return `<div class="shelf-bin" style="display:flex;flex-direction:column;gap:8px;padding:10px 11px 0;background:${hexA(hue,0.10)};border:1px solid ${hexA(hue,0.38)};border-radius:10px">
+        <div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:${hue}"></span><span style="font-size:11.5px;font-weight:600;letter-spacing:.02em;color:#6b6157;white-space:nowrap">${GROUP[g].name}</span></div>
+        <div style="display:flex;align-items:flex-end;gap:5px;border-bottom:3px solid ${hexA(hue,0.5)};padding-bottom:10px">${books.map(spineHtml).join('')}</div>
+      </div>`;
+  };
+  // 한 권 묶음(구약/신약)을 장르 순서대로 색 칸에 나눠 담아 가로로 펼친다.
+  const testament = (label, slice) => {
+    const order = []; const map = {};
+    slice.forEach(b => { const g = b[2]; if (!map[g]) { map[g] = []; order.push(g); } map[g].push(b); });
+    const bins = order.map(g => binHtml(g, map[g])).join('');
+    return `<div class="testament-label">${label}</div><div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">${bins}</div>`;
   };
 
   mount.innerHTML = `
     ${!premium ? `<div class="upsell"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v9H5z" stroke-linejoin="round"/></svg><div class="upsell-text"><strong>동행 멤버십</strong>: 1년 통독·맥체인 플랜 · 음성 낭독 · 하이라이트·메모 · 원어/다국어 · 완독 뱃지.<p>무료는 책장에서 읽은 장을 기록하고 색으로 완독을 표시하는 기능까지.</p></div><a class="btn btn-gold btn-sm" href="index.html#pricing">멤버십 보기</a></div>` : ''}
-    <div class="shelf-wrap" style="width:fit-content;max-width:100%">
-      <div class="shelf-legend">
-        <span class="lg"><span class="sw" style="background:rgba(255,255,255,.12)"></span>읽기 전</span>
-        <span class="lg"><span class="sw" style="background:#A88762"></span>읽는 중 (색이 차오름)</span>
+    <div class="shelf-wrap" style="background:linear-gradient(180deg,#FFFDF8,#F3ECDD)">
+      <div class="shelf-legend" style="color:#7c7264">
+        <span class="lg"><span class="sw" style="background:#E7E0D1"></span>읽기 전</span>
+        <span class="lg"><span class="sw" style="background:#E0A24E"></span>읽는 중 (색이 차오름)</span>
         <span class="lg"><span class="sw" style="background:var(--gold-2);box-shadow:0 0 6px var(--gold-2)"></span>완독</span>
       </div>
-      ${renderTestament('구약 39권', BIBLE.slice(0,39), 13)}
-      ${renderTestament('신약 27권', BIBLE.slice(39), 14)}
+      ${testament('구약 39권', BIBLE.slice(0,39))}
+      ${testament('신약 27권', BIBLE.slice(39))}
     </div>
     <div class="bible-stat">
       <div><div class="bs-num">${Math.round(readCh/totalCh*100)}%</div><div class="bs-label">통독 진행 (${readCh}/${totalCh}장)</div></div>
