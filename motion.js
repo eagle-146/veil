@@ -13,7 +13,7 @@
   const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 
   /* ── Hero: glow follows the cursor + gentle stage parallax ── */
-  const hero = document.querySelector('.hero-ed');
+  const hero = document.querySelector('.hero-ed, .hero-c');
   if (hero) {
     let tHx = 50, tHy = 47, hx = 50, hy = 47;   // glow position (%)
     let tPx = 0, tPy = 0, px = 0, py = 0;        // parallax (-1..1)
