@@ -948,7 +948,7 @@ function openBook(name) {
     const reader = $('#bp-reader', panel);
     const isRead = read.has(cur);
     reader.innerHTML = `
-      <div class="bp-reader-head">
+      <div class="bp-reader-head" style="padding-right:42px;flex-wrap:wrap">
         <span class="bp-reader-title">${name} ${cur}장</span>
         <div style="display:flex;align-items:center;gap:8px">
           <div style="display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden" role="group" aria-label="본문 글자 크기">
