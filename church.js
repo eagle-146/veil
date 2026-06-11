@@ -70,7 +70,7 @@
 
   /* ── 상태 ── */
   let db = null;
-  const state = { user: null, churches: [], churchId: null, church: null, role: 'member', view: 'home', editingMemberId: null, attDate: null, attType: '주일오전', attRows: [], groups: [], qtShares: [], servicePlans: [], openPlanId: null, sermons: [], openSermonId: null, editingSermonId: null, bulletins: [], openBulletinId: null, editingBulletinId: null,
+  const state = { user: null, churches: [], churchId: null, church: null, role: 'member', view: 'home', editingMemberId: null, attDate: null, attType: '주일오전', attRows: [], groups: [], qtShares: [], servicePlans: [], openPlanId: null, sermons: [], openSermonId: null, editingSermonId: null, bulletins: [], openBulletinId: null, editingBulletinId: null, newcomers: [], notices: [], serveSlots: [],
                   members: [], plan: null, myProgress: new Set(), allProgress: [], prayers: [] };
   const LAST_KEY = 'veil.church.last';
   const isAdmin = () => state.role === 'admin' || (state.church && state.church.owner_id === state.user?.id);
@@ -109,7 +109,7 @@
     await loadMembers();
     const me = myMember();
     state.role = me ? me.role : (state.church.owner_id === state.user.id ? 'admin' : 'member');
-    await Promise.all([loadPlan(), loadPrayers(), loadGroups(), loadQtShares(), loadServicePlans(), loadSermons(), loadBulletins()]);
+    await Promise.all([loadPlan(), loadPrayers(), loadGroups(), loadQtShares(), loadServicePlans(), loadSermons(), loadBulletins(), loadNewcomers(), loadNotices(), loadServeSlots()]);
     renderDashboard();
   }
   async function loadMembers() {
@@ -208,6 +208,20 @@
 
   /* ════════════ 대시보드 ════════════ */
   const PLAN_LABEL = { seed: '씨앗', lamp: '등불', beacon: '등대', temple: '성전' };
+  const TAB_GROUPS = [
+    { label: '', tabs: [['home', '홈']] },
+    { label: '목양', tabs: [['members', '교적·생일'], ['attendance', '출석'], ['groups', '구역·셀'], ['newcomer', '새가족']] },
+    { label: '말씀', tabs: [['reading', '통독'], ['qt', '큐티']] },
+    { label: '예배', tabs: [['worship', '콘티'], ['sermon', '설교'], ['bulletin', '주보']] },
+    { label: '소통', tabs: [['prayer', '기도제목'], ['notice', '공지']] },
+    { label: '운영', tabs: [['serve', '봉사']] },
+  ];
+  function tabsHtml() {
+    return TAB_GROUPS.map(g =>
+      `<div class="tab-group">${g.label ? `<span class="tab-glabel">${g.label}</span>` : ''}${g.tabs.map(([id, label]) =>
+        `<button data-view="${id}" class="${state.view === id ? 'active' : ''}">${label}${id === 'prayer' && state.prayers.length ? `<span class="tab-count">${state.prayers.length}</span>` : ''}</button>`).join('')}</div>`
+    ).join('');
+  }
   function setBadge(name) {
     const b = document.getElementById('church-badge');
     if (!b) return;
@@ -230,18 +244,7 @@
         </div>
         ${switcher}
       </div>
-      <div class="church-tabs" id="ch-tabs">
-        <button data-view="home" class="${state.view==='home'?'active':''}">홈</button>
-        <button data-view="members" class="${state.view==='members'?'active':''}">교적 · 생일</button>
-        <button data-view="attendance" class="${state.view==='attendance'?'active':''}">출석</button>
-        <button data-view="groups" class="${state.view==='groups'?'active':''}">구역·셀</button>
-        <button data-view="reading" class="${state.view==='reading'?'active':''}">전교인 통독</button>
-        <button data-view="qt" class="${state.view==='qt'?'active':''}">큐티 나눔</button>
-        <button data-view="worship" class="${state.view==='worship'?'active':''}">예배 콘티</button>
-        <button data-view="sermon" class="${state.view==='sermon'?'active':''}">설교 노트</button>
-        <button data-view="bulletin" class="${state.view==='bulletin'?'active':''}">주보</button>
-        <button data-view="prayer" class="${state.view==='prayer'?'active':''}">기도제목<span class="tab-count">${state.prayers.length||''}</span></button>
-      </div>
+      <div class="church-tabs" id="ch-tabs">${tabsHtml()}</div>
       <div id="ch-view"></div>`;
     const sw = document.getElementById('ch-switch');
     if (sw) sw.addEventListener('change', e => selectChurch(e.target.value));
@@ -259,6 +262,9 @@
     if (state.view === 'worship') return renderWorship();
     if (state.view === 'sermon') return renderSermon();
     if (state.view === 'bulletin') return renderBulletin();
+    if (state.view === 'newcomer') return renderNewcomer();
+    if (state.view === 'notice') return renderNotice();
+    if (state.view === 'serve') return renderServe();
     if (state.view === 'reading') return renderReading();
     if (state.view === 'prayer') return renderPrayer();
   }
@@ -879,6 +885,164 @@
       const { error } = await db.from('bulletins').delete().eq('id', b.dataset.id);
       if (error) { toast('삭제 실패: ' + error.message); return; }
       toast('삭제했습니다.'); await loadBulletins(); renderDashboard();
+    }));
+  }
+
+  /* ════════════ 새가족 양육 트랙 ════════════ */
+  const NC_STAGES = ['새가족등록', '양육중', '정착완료'];
+  async function loadNewcomers() {
+    const { data, error } = await db.from('newcomers').select('*').eq('church_id', state.churchId).order('registered_date', { ascending: false });
+    state.newcomers = error ? [] : (data || []);
+  }
+  function ncCard(n, admin) {
+    return `<div class="nc-card">
+      <div class="nc-top"><strong>${esc(n.name)}</strong><span class="nc-meta">${esc((n.registered_date||'').slice(0,10))}${n.contact ? ' · ' + esc(n.contact) : ''}</span></div>
+      ${n.note ? `<p class="nc-note">${esc(n.note)}</p>` : ''}
+      ${admin ? `<div class="nc-ops">
+        <select class="nc-stage" data-id="${n.id}">${NC_STAGES.map(s => `<option ${s===n.stage?'selected':''}>${s}</option>`).join('')}</select>
+        <input type="text" class="nc-care" data-id="${n.id}" placeholder="양육자" value="${esc(n.care_giver||'')}" />
+        <button class="nc-del" data-id="${n.id}" title="삭제">✕</button>
+      </div>` : (n.care_giver ? `<div class="nc-meta">양육: ${esc(n.care_giver)}</div>` : '')}
+    </div>`;
+  }
+  function renderNewcomer() {
+    const v = document.getElementById('ch-view');
+    const admin = isAdmin();
+    const byStage = (s) => state.newcomers.filter(n => n.stage === s);
+    v.innerHTML = `
+      ${admin ? `<div class="panel">
+        <div class="ch-section-head"><h2>새가족 등록</h2></div>
+        <div class="ch-form-row">
+          <div class="field"><label>이름</label><input type="text" id="nc-name" placeholder="홍길동" /></div>
+          <div class="field" style="flex:0 0 150px"><label>연락처</label><input type="text" id="nc-contact" placeholder="010-..." /></div>
+          <div class="field" style="flex:0 0 150px"><label>등록일</label><input type="date" id="nc-date" value="${todayStr()}" /></div>
+          <button class="btn btn-gold btn-sm" id="nc-add" style="margin-bottom:2px">추가</button>
+        </div>
+        <p class="ch-err" id="nc-err" hidden></p>
+      </div>` : ''}
+      ${state.newcomers.length ? NC_STAGES.map(s => {
+        const list = byStage(s);
+        return `<div class="panel"><div class="ch-section-head"><h2>${s} <span class="plan-meta">${list.length}명</span></h2></div>
+          ${list.length ? `<div class="nc-list">${list.map(n => ncCard(n, admin)).join('')}</div>` : '<p class="plan-meta">해당 단계의 새가족이 없습니다.</p>'}</div>`;
+      }).join('') : '<div class="ch-empty">아직 등록된 새가족이 없습니다.</div>'}`;
+    if (!admin) return;
+    const addBtn = document.getElementById('nc-add');
+    if (addBtn) addBtn.addEventListener('click', async () => {
+      const name = document.getElementById('nc-name').value.trim();
+      const err = document.getElementById('nc-err');
+      if (!name) { err.textContent = '이름을 입력해 주세요.'; err.hidden = false; return; }
+      err.hidden = true; addBtn.disabled = true;
+      const row = { church_id: state.churchId, name, contact: document.getElementById('nc-contact').value.trim() || null, registered_date: document.getElementById('nc-date').value || todayStr() };
+      try { const { error } = await db.from('newcomers').insert(row); if (error) throw error; toast('새가족을 등록했습니다.'); await loadNewcomers(); renderDashboard(); }
+      catch (e) { err.textContent = e.message || '등록 실패'; err.hidden = false; addBtn.disabled = false; }
+    });
+    v.querySelectorAll('.nc-stage').forEach(s => s.addEventListener('change', async () => {
+      const { error } = await db.from('newcomers').update({ stage: s.value }).eq('id', s.dataset.id);
+      if (error) { toast('변경 실패: ' + error.message); return; } toast('단계를 변경했습니다.'); await loadNewcomers(); renderDashboard();
+    }));
+    v.querySelectorAll('.nc-care').forEach(inp => inp.addEventListener('change', async () => {
+      const { error } = await db.from('newcomers').update({ care_giver: inp.value.trim() || null }).eq('id', inp.dataset.id);
+      if (error) toast('저장 실패: ' + error.message); else toast('양육자를 저장했습니다.');
+    }));
+    v.querySelectorAll('.nc-del').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('이 새가족 기록을 삭제할까요?')) return;
+      const { error } = await db.from('newcomers').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; } toast('삭제했습니다.'); await loadNewcomers(); renderDashboard();
+    }));
+  }
+
+  /* ════════════ 공지 ════════════ */
+  async function loadNotices() {
+    const { data, error } = await db.from('notices').select('*').eq('church_id', state.churchId).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(50);
+    state.notices = error ? [] : (data || []);
+  }
+  function noticeCard(n, admin) {
+    return `<div class="notice-card ${n.pinned ? 'pinned' : ''}">
+      <div class="no-head">${n.pinned ? '<span class="no-pin">📌</span>' : ''}<strong>${esc(n.title)}</strong><span class="no-date">${esc((n.created_at||'').slice(0,10))}</span></div>
+      ${n.body ? `<p class="no-body">${esc(n.body)}</p>` : ''}
+      ${admin ? `<div class="no-actions"><button class="btn btn-text btn-sm no-pin-btn" data-id="${n.id}" data-pin="${n.pinned ? 0 : 1}">${n.pinned ? '고정 해제' : '상단 고정'}</button><button class="btn btn-text btn-sm no-del" data-id="${n.id}">삭제</button></div>` : ''}
+    </div>`;
+  }
+  function renderNotice() {
+    const v = document.getElementById('ch-view');
+    const admin = isAdmin();
+    const myName = (myMember() && myMember().name) || state.user.name || (state.user.email || '').split('@')[0];
+    v.innerHTML = `
+      ${admin ? `<div class="panel">
+        <div class="ch-section-head"><h2>공지 작성</h2></div>
+        <div class="field"><label>제목</label><input type="text" id="no-title" placeholder="공지 제목" /></div>
+        <div class="field"><label>내용</label><textarea id="no-body" rows="3" placeholder="공지 내용"></textarea></div>
+        <div style="display:flex;align-items:center;gap:12px;justify-content:flex-end">
+          <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--ink-2)"><input type="checkbox" id="no-pin" style="width:15px;height:15px;accent-color:var(--gold)" /> 상단 고정</label>
+          <button class="btn btn-gold btn-sm" id="no-add">공지 올리기</button>
+        </div>
+        <p class="ch-err" id="no-err" hidden></p>
+      </div>` : ''}
+      <div class="notice-list">${state.notices.length ? state.notices.map(n => noticeCard(n, admin)).join('') : '<div class="ch-empty">아직 공지가 없습니다.</div>'}</div>`;
+    if (!admin) return;
+    const addBtn = document.getElementById('no-add');
+    addBtn.addEventListener('click', async () => {
+      const title = document.getElementById('no-title').value.trim();
+      const err = document.getElementById('no-err');
+      if (!title) { err.textContent = '제목을 입력해 주세요.'; err.hidden = false; return; }
+      err.hidden = true; addBtn.disabled = true;
+      try {
+        const { error } = await db.from('notices').insert({ church_id: state.churchId, title, body: document.getElementById('no-body').value.trim() || null, pinned: document.getElementById('no-pin').checked, author_name: myName });
+        if (error) throw error;
+        toast('공지를 올렸습니다.'); await loadNotices(); renderDashboard();
+      } catch (e) { err.textContent = e.message || '등록 실패'; err.hidden = false; addBtn.disabled = false; }
+    });
+    v.querySelectorAll('.no-pin-btn').forEach(b => b.addEventListener('click', async () => {
+      const { error } = await db.from('notices').update({ pinned: b.dataset.pin === '1' }).eq('id', b.dataset.id);
+      if (error) { toast('실패: ' + error.message); return; } await loadNotices(); renderDashboard();
+    }));
+    v.querySelectorAll('.no-del').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('이 공지를 삭제할까요?')) return;
+      const { error } = await db.from('notices').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; } toast('삭제했습니다.'); await loadNotices(); renderDashboard();
+    }));
+  }
+
+  /* ════════════ 봉사 스케줄 ════════════ */
+  const SERVE_ROLES = ['반주', '찬양 인도', '싱어', '안내', '방송/음향', '주차', '주방', '헌금위원', '새가족 환영', '교사', '기타'];
+  async function loadServeSlots() {
+    const { data, error } = await db.from('serve_slots').select('*').eq('church_id', state.churchId).order('serve_date', { ascending: false }).order('role').limit(200);
+    state.serveSlots = error ? [] : (data || []);
+  }
+  function renderServe() {
+    const v = document.getElementById('ch-view');
+    const admin = isAdmin();
+    const dates = [...new Set(state.serveSlots.map(s => s.serve_date))];
+    v.innerHTML = `
+      ${admin ? `<div class="panel">
+        <div class="ch-section-head"><h2>봉사 배정</h2></div>
+        <div class="ch-form-row">
+          <div class="field" style="flex:0 0 150px"><label>날짜</label><input type="date" id="sv-date" value="${todayStr()}" /></div>
+          <div class="field" style="flex:0 0 140px"><label>역할</label><select id="sv-role">${SERVE_ROLES.map(r => `<option>${r}</option>`).join('')}</select></div>
+          <div class="field"><label>봉사자</label><input type="text" id="sv-assignee" placeholder="이름" /></div>
+          <button class="btn btn-gold btn-sm" id="sv-add" style="margin-bottom:2px">배정</button>
+        </div>
+        <p class="ch-err" id="sv-err" hidden></p>
+      </div>` : ''}
+      ${dates.length ? dates.map(d => {
+        const slots = state.serveSlots.filter(s => s.serve_date === d);
+        return `<div class="panel"><div class="ch-section-head"><h2>${esc((d||'').slice(0,10))} <span class="plan-meta">${slots.length}건</span></h2></div>
+          <div class="sv-list">${slots.map(s => `<div class="sv-row"><span class="sv-role">${esc(s.role)}</span><span class="sv-assignee">${esc(s.assignee||'미정')}</span>${admin ? `<button class="sv-del" data-id="${s.id}" title="삭제">✕</button>` : ''}</div>`).join('')}</div></div>`;
+      }).join('') : '<div class="ch-empty">아직 봉사 배정이 없습니다.</div>'}`;
+    if (!admin) return;
+    const addBtn = document.getElementById('sv-add');
+    addBtn.addEventListener('click', async () => {
+      const assignee = document.getElementById('sv-assignee').value.trim();
+      const err = document.getElementById('sv-err');
+      if (!assignee) { err.textContent = '봉사자 이름을 입력해 주세요.'; err.hidden = false; return; }
+      err.hidden = true; addBtn.disabled = true;
+      const row = { church_id: state.churchId, serve_date: document.getElementById('sv-date').value || todayStr(), role: document.getElementById('sv-role').value, assignee };
+      try { const { error } = await db.from('serve_slots').insert(row); if (error) throw error; toast('봉사를 배정했습니다.'); await loadServeSlots(); renderDashboard(); }
+      catch (e) { err.textContent = e.message || '배정 실패'; err.hidden = false; addBtn.disabled = false; }
+    });
+    v.querySelectorAll('.sv-del').forEach(b => b.addEventListener('click', async () => {
+      const { error } = await db.from('serve_slots').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; } toast('삭제했습니다.'); await loadServeSlots(); renderDashboard();
     }));
   }
 

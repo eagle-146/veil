@@ -36,6 +36,9 @@
 .church-tabs button.active { color: var(--ink); }
 .church-tabs button.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--gold); }
 .church-tabs .tab-count { font-size: .72rem; color: var(--gold); margin-left: 5px; }
+.church-tabs { gap: 2px 16px; align-items: flex-end; }
+.tab-group { display: inline-flex; align-items: center; gap: 1px; }
+.tab-glabel { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-right: 5px; padding-bottom: 11px; white-space: nowrap; }
 
 /* ── 공통: 섹션 헤더 + 추가 폼 ── */
 .ch-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 14px; }
@@ -166,6 +169,40 @@
 /* 주보 */
 .bl-extra { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: .88rem; color: var(--ink-2); }
 .bl-extra strong { color: var(--gold); }
+
+/* 새가족 양육 트랙 */
+.nc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 10px; }
+.nc-card { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; background: var(--white); }
+.nc-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.nc-top strong { color: var(--ink); }
+.nc-meta { font-size: .76rem; color: var(--muted); }
+.nc-note { margin: 6px 0 0; font-size: .85rem; color: var(--ink-2); white-space: pre-wrap; }
+.nc-ops { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.nc-ops select, .nc-ops input { font: inherit; font-size: .8rem; padding: 4px 8px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--white); color: var(--ink); }
+.nc-ops select { flex: 0 0 92px; }
+.nc-ops input { flex: 1; min-width: 0; }
+.nc-ops .nc-del { flex: none; border: none; background: none; color: var(--muted); cursor: pointer; padding: 2px 4px; }
+.nc-ops .nc-del:hover { color: #A6493B; }
+
+/* 공지 */
+.notice-list { display: grid; gap: 10px; }
+.notice-card { border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; background: var(--white); }
+.notice-card.pinned { border-color: var(--gold); background: linear-gradient(135deg, var(--gold-soft), var(--white)); }
+.no-head { display: flex; align-items: center; gap: 8px; }
+.no-head strong { color: var(--ink); flex: 1; }
+.no-pin { font-size: .9rem; }
+.no-date { font-size: .76rem; color: var(--muted); }
+.no-body { margin: 6px 0 0; color: var(--ink-2); white-space: pre-wrap; line-height: 1.6; font-size: .92rem; }
+.no-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+/* 봉사 스케줄 */
+.sv-list { display: grid; gap: 4px; }
+.sv-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+.sv-row:last-child { border-bottom: none; }
+.sv-role { flex: 0 0 110px; color: var(--gold); font-weight: 600; font-size: .85rem; }
+.sv-assignee { flex: 1; color: var(--ink); }
+.sv-del { border: none; background: none; color: var(--muted); cursor: pointer; opacity: .5; font-size: .9rem; }
+.sv-del:hover { opacity: 1; color: #A6493B; }
 
 /* 토스트 */
 .ch-toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 999px; font-size: .9rem; opacity: 0; transition: opacity .25s, transform .25s; z-index: 2000; pointer-events: none; }

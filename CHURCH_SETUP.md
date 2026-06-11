@@ -302,15 +302,77 @@ create policy bl_sel on public.bulletins for select using (is_church_member(chur
 create policy bl_ins on public.bulletins for insert with check (is_church_admin(church_id));
 create policy bl_upd on public.bulletins for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
 create policy bl_del on public.bulletins for delete using (is_church_admin(church_id));
+
+-- 11) 새가족 양육 트랙 (newcomers) ----------------------------------
+create table if not exists public.newcomers (
+  id              uuid primary key default gen_random_uuid(),
+  church_id       uuid not null references public.churches on delete cascade,
+  name            text not null,
+  contact         text,
+  registered_date date default current_date,
+  stage           text not null default '새가족등록',  -- 새가족등록|양육중|정착완료
+  care_giver      text,
+  note            text,
+  created_at      timestamptz default now()
+);
+alter table public.newcomers enable row level security;
+drop policy if exists nc_sel on public.newcomers;
+drop policy if exists nc_ins on public.newcomers;
+drop policy if exists nc_upd on public.newcomers;
+drop policy if exists nc_del on public.newcomers;
+create policy nc_sel on public.newcomers for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy nc_ins on public.newcomers for insert with check (is_church_admin(church_id));
+create policy nc_upd on public.newcomers for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
+create policy nc_del on public.newcomers for delete using (is_church_admin(church_id));
+
+-- 12) 공지 (notices) ------------------------------------------------
+create table if not exists public.notices (
+  id          uuid primary key default gen_random_uuid(),
+  church_id   uuid not null references public.churches on delete cascade,
+  title       text not null,
+  body        text,
+  pinned      boolean not null default false,
+  author_name text,
+  created_at  timestamptz default now()
+);
+alter table public.notices enable row level security;
+drop policy if exists no_sel on public.notices;
+drop policy if exists no_ins on public.notices;
+drop policy if exists no_upd on public.notices;
+drop policy if exists no_del on public.notices;
+create policy no_sel on public.notices for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy no_ins on public.notices for insert with check (is_church_admin(church_id));
+create policy no_upd on public.notices for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
+create policy no_del on public.notices for delete using (is_church_admin(church_id));
+
+-- 13) 봉사 스케줄 (serve_slots) -------------------------------------
+create table if not exists public.serve_slots (
+  id         uuid primary key default gen_random_uuid(),
+  church_id  uuid not null references public.churches on delete cascade,
+  serve_date date not null default current_date,
+  role       text not null,
+  assignee   text,
+  note       text,
+  created_at timestamptz default now()
+);
+alter table public.serve_slots enable row level security;
+drop policy if exists sv_sel on public.serve_slots;
+drop policy if exists sv_ins on public.serve_slots;
+drop policy if exists sv_upd on public.serve_slots;
+drop policy if exists sv_del on public.serve_slots;
+create policy sv_sel on public.serve_slots for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy sv_ins on public.serve_slots for insert with check (is_church_admin(church_id));
+create policy sv_upd on public.serve_slots for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
+create policy sv_del on public.serve_slots for delete using (is_church_admin(church_id));
 ```
 
 확인:
 ```sql
 select tablename, count(*) from pg_policies
-where tablename in ('churches','church_members','reading_plans','reading_progress','prayer_requests','attendance','church_groups','qt_shares','service_plans','sermons','bulletins')
+where tablename in ('churches','church_members','reading_plans','reading_progress','prayer_requests','attendance','church_groups','qt_shares','service_plans','sermons','bulletins','newcomers','notices','serve_slots')
 group by tablename;
 ```
-11개 테이블이 모두 보이면 정상입니다.
+14개 테이블이 모두 보이면 정상입니다.
 
 ## 동작 개념
 - **교회 생성** = 로그인한 사용자가 `churches`에 insert(자동으로 owner=admin) → 본인 `church_members`(admin) 추가.
