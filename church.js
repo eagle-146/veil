@@ -223,7 +223,7 @@
     { label: '말씀', tabs: [['reading', '통독'], ['qt', '큐티']] },
     { label: '예배', tabs: [['worship', '콘티'], ['sermon', '설교'], ['bulletin', '주보']] },
     { label: '소통', tabs: [['prayer', '기도제목'], ['notice', '공지']] },
-    { label: '운영', tabs: [['serve', '봉사'], ['finance', '헌금·재정']] },
+    { label: '운영', tabs: [['serve', '봉사'], ['finance', '헌금·재정'], ['settings', '설정']] },
   ];
   function tabsHtml() {
     return TAB_GROUPS.map(g =>
@@ -275,6 +275,7 @@
     if (state.view === 'notice') return renderNotice();
     if (state.view === 'serve') return renderServe();
     if (state.view === 'finance') return renderFinance();
+    if (state.view === 'settings') return renderSettings();
     if (state.view === 'reading') return renderReading();
     if (state.view === 'prayer') return renderPrayer();
   }
@@ -307,6 +308,19 @@
   }
 
   /* ════════════ 교적 · 생일 ════════════ */
+  async function sendBirthdayAlimtalk() {
+    const t = new Date(), tm = t.getMonth() + 1, td = t.getDate();
+    const todays = state.members.filter(m => m.birthday && +m.birthday.split('-')[1] === tm && +m.birthday.split('-')[2] === td);
+    const recipients = todays.filter(m => m.phone).map(m => ({ name: m.name, phone: m.phone }));
+    if (!recipients.length) { toast('연락처가 등록된 오늘 생일자가 없습니다.'); return; }
+    try {
+      const r = await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ template: 'birthday', church: state.church.name, recipients }) });
+      const data = await r.json();
+      if (data.status === 'not_configured') toast(`알림톡 미설정 — 대상 ${data.would_send}명. 대행사 키 등록 후 발송됩니다.`);
+      else if (data.status === 'sent') toast(`${recipients.length}명에게 생일 축하를 보냈습니다. 🎂`);
+      else toast(data.message || '알림톡 발송은 준비 중입니다.');
+    } catch (e) { toast('발송 요청 실패: ' + (e.message || e)); }
+  }
   function renderMembers() {
     const v = document.getElementById('ch-view');
     const admin = isAdmin();
@@ -320,7 +334,7 @@
     v.innerHTML = `
       <div class="bday-strip">
         <div class="bday-box today"><h3>${cake} 오늘의 생일</h3>${
-          todays.length ? todays.map(m => `<span class="bday-chip">${esc(m.name)} <span class="d">🎂</span></span>`).join('')
+          todays.length ? todays.map(m => `<span class="bday-chip">${esc(m.name)} <span class="d">🎂</span></span>`).join('') + (admin ? '<div style="margin-top:10px"><button class="btn btn-gold btn-sm" id="bday-alimtalk">🎂 축하 알림톡 보내기</button></div>' : '')
           : '<p class="plan-meta">오늘 생일인 교인이 없습니다.</p>'}</div>
         <div class="bday-box"><h3>${cake} 이번 달 생일</h3>${
           month.length ? month.map(m => `<span class="bday-chip"><span class="d">${m._b.d}일</span> ${esc(m.name)}</span>`).join('')
@@ -355,6 +369,8 @@
           </tr>`).join('')}</tbody></table>` : '<div class="ch-empty">아직 등록된 교인이 없습니다.</div>'}
       </div>`;
 
+    const btBtn = document.getElementById('bday-alimtalk');
+    if (btBtn) btBtn.addEventListener('click', sendBirthdayAlimtalk);
     if (admin) {
       const addBtn = document.getElementById('m-add');
       addBtn.addEventListener('click', async () => {
@@ -1127,6 +1143,73 @@
       const { error } = await db.from('finance_entries').delete().eq('id', b.dataset.id);
       if (error) { toast('삭제 실패: ' + error.message); return; } toast('삭제했습니다.'); await loadFinance(); renderDashboard();
     }));
+  }
+
+  /* ════════════ 교회 설정 · 권한 ════════════ */
+  const ROLE_LABEL = { admin: '관리자', leader: '리더', member: '교인' };
+  function renderSettings() {
+    const v = document.getElementById('ch-view');
+    const admin = isAdmin();
+    if (!admin) { v.innerHTML = '<div class="ch-empty">관리자만 접근할 수 있는 설정입니다.</div>'; return; }
+    const isOwner = state.church.owner_id === state.user.id;
+    const appMembers = state.members.filter(m => m.user_id);
+    v.innerHTML = `
+      <div class="panel">
+        <div class="ch-section-head"><h2>교회 정보</h2></div>
+        <div class="ch-form-row">
+          <div class="field"><label>교회 이름</label><input type="text" id="set-name" value="${esc(state.church.name)}" /></div>
+          <button class="btn btn-gold btn-sm" id="set-name-save" style="margin-bottom:2px">저장</button>
+        </div>
+        <div class="set-row"><span>현재 플랜</span><span><span class="ch-plan">${PLAN_LABEL[state.church.plan]||'씨앗'}</span> &nbsp;<a href="membership.html#church" target="_blank" rel="noopener" style="font-size:.82rem;color:var(--gold)">플랜 변경 문의 →</a></span></div>
+        <div class="set-row"><span>초대코드</span><span><code class="invite-code">${esc(state.church.invite_code)}</code> ${isOwner ? '<button class="btn btn-text btn-sm" id="set-recode">재발급</button>' : ''}</span></div>
+      </div>
+      <div class="panel">
+        <div class="ch-section-head"><h2>멤버 권한 <span class="plan-meta">${appMembers.length}명 (앱 연결)</span></h2></div>
+        ${appMembers.length ? `<div class="set-members">${appMembers.map(m => `
+          <div class="set-member"><span class="sm-name">${esc(m.name)}${m.user_id===state.user.id ? ' (나)' : ''}${m.user_id===state.church.owner_id ? ' · 소유자' : ''}</span>
+          ${(isOwner && m.user_id !== state.church.owner_id) ? `<select class="sm-role" data-id="${m.id}">${['member','leader','admin'].map(r => `<option value="${r}" ${m.role===r?'selected':''}>${ROLE_LABEL[r]}</option>`).join('')}</select>` : `<span class="role-tag role-${m.role}">${ROLE_LABEL[m.role]||'교인'}</span>`}</div>`).join('')}</div>`
+          : '<div class="ch-empty">앱에 로그인해 합류한 멤버가 없습니다. 초대코드로 합류하면 여기에 표시됩니다.</div>'}
+        <p class="plan-meta" style="margin-top:10px">관리자는 교적·예배·재정 등 모든 관리 기능에 접근합니다. 소유자만 권한을 변경할 수 있습니다.</p>
+      </div>
+      ${isOwner ? `<div class="panel set-danger">
+        <div class="ch-section-head"><h2 style="color:#A6493B">교회 삭제</h2></div>
+        <p class="plan-meta">교회와 모든 데이터(교적·출석·통독·기도제목 등)가 영구 삭제됩니다. 되돌릴 수 없습니다.</p>
+        <button class="btn btn-ghost btn-sm" id="set-delete" style="color:#A6493B;border-color:#E5C5BD;margin-top:8px">교회 삭제</button>
+      </div>` : ''}`;
+
+    document.getElementById('set-name-save').addEventListener('click', async (ev) => {
+      const name = document.getElementById('set-name').value.trim();
+      if (!name) { toast('교회 이름을 입력해 주세요.'); return; }
+      ev.target.disabled = true;
+      const { error } = await db.from('churches').update({ name }).eq('id', state.churchId);
+      if (error) { toast('저장 실패: ' + error.message); ev.target.disabled = false; return; }
+      toast('교회 이름을 저장했습니다.');
+      await loadChurches(); state.church = state.churches.find(c => c.id === state.churchId); renderDashboard();
+    });
+    const recode = document.getElementById('set-recode');
+    if (recode) recode.addEventListener('click', async () => {
+      if (!confirm('초대코드를 새로 발급할까요? 기존 코드는 더 이상 쓸 수 없습니다.')) return;
+      const { error } = await db.from('churches').update({ invite_code: genCode() }).eq('id', state.churchId);
+      if (error) { toast('재발급 실패: ' + error.message); return; }
+      toast('초대코드를 재발급했습니다.');
+      await loadChurches(); state.church = state.churches.find(c => c.id === state.churchId); renderDashboard();
+    });
+    v.querySelectorAll('.sm-role').forEach(s => s.addEventListener('change', async () => {
+      const { error } = await db.from('church_members').update({ role: s.value }).eq('id', s.dataset.id);
+      if (error) { toast('변경 실패: ' + error.message); return; }
+      toast('권한을 변경했습니다.'); await loadMembers(); renderDashboard();
+    }));
+    const del = document.getElementById('set-delete');
+    if (del) del.addEventListener('click', async () => {
+      if (!confirm('정말 교회를 삭제할까요? 모든 데이터가 사라집니다.')) return;
+      if (!confirm('되돌릴 수 없습니다. 한 번 더 확인합니다 — 삭제할까요?')) return;
+      const { error } = await db.from('churches').delete().eq('id', state.churchId);
+      if (error) { toast('삭제 실패: ' + error.message); return; }
+      toast('교회를 삭제했습니다.');
+      localStorage.removeItem(LAST_KEY); state.churchId = null; state.church = null;
+      await loadChurches();
+      if (state.churches.length) await selectChurch(state.churches[0].id); else renderSetup();
+    });
   }
 
   /* ════════════ 기도제목 / 중보기도 ════════════ */

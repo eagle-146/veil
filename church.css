@@ -235,6 +235,15 @@
 .pr-cmt-form input { flex: 1; font: inherit; font-size: .85rem; padding: 7px 12px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--white); color: var(--ink); }
 .pr-cmt-form input:focus { outline: none; border-color: var(--gold); }
 
+/* 교회 설정 · 권한 */
+.set-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); font-size: .9rem; color: var(--ink-2); }
+.invite-code { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 3px 10px; font-family: ui-monospace, monospace; letter-spacing: .1em; color: var(--ink); font-weight: 600; }
+.set-members { display: grid; gap: 4px; }
+.set-member { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.sm-name { color: var(--ink); font-size: .92rem; }
+.sm-role { font: inherit; font-size: .82rem; padding: 5px 9px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--white); color: var(--ink); }
+.set-danger { border-color: #E5C5BD; }
+
 /* 토스트 */
 .ch-toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 999px; font-size: .9rem; opacity: 0; transition: opacity .25s, transform .25s; z-index: 2000; pointer-events: none; }
 .ch-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

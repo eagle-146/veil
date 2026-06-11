@@ -422,6 +422,16 @@ group by tablename;
 - **통독** = 관리자가 `reading_plans` 생성 → 교인이 `reading_progress`에 일차별 체크.
 - **기도제목** = 교인이 `prayer_requests` 작성 → 중보자 배정/상태 변경.
 
-## 알림톡(생일 자동축하)은 별도
-실제 카카오 알림톡 발송은 **사업자등록 + 카카오 비즈니스 채널 + 템플릿 사전승인 + 발송대행사(솔라피/알리고 등) API 키**가 필요합니다.
-코드에는 발송부를 분리해 두고(`/api/notify` 스텁), 위 준비가 끝나면 키만 연결하면 됩니다. 그 전까지는 "오늘의 생일" 대시보드로 수동 축하가 가능합니다.
+## 알림톡(생일 자동축하) 설정
+
+실제 카카오 알림톡 발송은 **사업자등록 + 카카오 비즈니스 채널(발신 프로필) + 알림톡 템플릿 사전승인 + 발송대행사(솔라피/알리고/NHN Toast 등) API 키**가 모두 갖춰져야 합니다.
+
+코드에는 발송부가 분리돼 있습니다(`api/notify.js`). 키가 없으면 `not_configured`를 돌려주고, 교적·생일 화면의 **"🎂 축하 알림톡 보내기"** 버튼은 대상 인원만 안내합니다("오늘의 생일" 대시보드로 수동 축하 가능).
+
+발송대행사(예: 솔라피) 키를 Vercel 환경변수에 등록한 뒤 `api/notify.js`의 `TODO`(대행사 send API 호출)를 구현하면 활성화됩니다:
+```powershell
+vercel env add SOLAPI_API_KEY
+vercel env add SOLAPI_API_SECRET
+vercel env add SOLAPI_PFID      # 카카오 발신 프로필(채널) ID
+vercel env add SOLAPI_SENDER    # 발신 번호(SMS 대체발송용)
+```

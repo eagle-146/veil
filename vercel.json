@@ -11,6 +11,9 @@
     },
     "api/bible.js": {
       "maxDuration": 10
+    },
+    "api/notify.js": {
+      "maxDuration": 15
     }
   },
   "rewrites": [
