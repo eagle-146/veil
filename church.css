@@ -248,3 +248,23 @@
 .ch-toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 999px; font-size: .9rem; opacity: 0; transition: opacity .25s, transform .25s; z-index: 2000; pointer-events: none; }
 .ch-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .ch-err { color: #A6493B; font-size: .85rem; margin: 8px 0 0; }
+
+/* ── 모바일 반응형 ── */
+@media (max-width: 720px) {
+  /* 탭이 많아 모바일에선 가로 스크롤(그룹 라벨 숨김) */
+  .church-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 0 8px; padding-bottom: 2px; scrollbar-width: none; }
+  .church-tabs::-webkit-scrollbar { display: none; }
+  .tab-group { flex: none; }
+  .tab-glabel { display: none; }
+  .church-tabs button { padding: 10px 11px; font-size: .9rem; white-space: nowrap; }
+  .church-head h1 { font-size: 1.5rem; }
+  .church-head { gap: 10px; }
+  .ch-switch { width: 100%; }
+  .member-table th, .member-table td { padding: 8px 6px; font-size: .86rem; }
+  .home-card .hc-num { font-size: 1.5rem; }
+  .bday-strip { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .nc-list { grid-template-columns: 1fr; }
+  .att-roster { grid-template-columns: 1fr 1fr; }
+}

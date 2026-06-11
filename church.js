@@ -288,6 +288,9 @@
     const todays = state.members.filter(m => m.birthday && +m.birthday.split('-')[1] === tm && +m.birthday.split('-')[2] === td);
     const openP = state.prayers.filter(p => p.status !== 'answered');
     const recent = state.prayers.slice(0, 4);
+    const topNotice = state.notices[0];
+    const nextServeDate = state.serveSlots.length ? state.serveSlots[0].serve_date : null;
+    const nextServe = nextServeDate ? state.serveSlots.filter(s => s.serve_date === nextServeDate) : [];
     v.innerHTML = `
       <div class="home-grid">
         <button class="home-card" data-go="members"><span class="hc-num">${state.members.length}</span><span class="hc-label">교인</span></button>
@@ -295,10 +298,16 @@
         <button class="home-card" data-go="reading"><span class="hc-num">${state.plan ? planPct()+'%' : '—'}</span><span class="hc-label">통독 진행</span></button>
         <button class="home-card" data-go="prayer"><span class="hc-num">${openP.length}</span><span class="hc-label">기도 중</span></button>
       </div>
+      ${topNotice ? `<div class="panel notice-card ${topNotice.pinned?'pinned':''}" style="cursor:pointer" data-go="notice">
+        <div class="no-head">${topNotice.pinned?'<span class="no-pin">📌</span>':''}<strong>${esc(topNotice.title)}</strong><span class="no-date">${esc((topNotice.created_at||'').slice(0,10))}</span></div>
+        ${topNotice.body ? `<p class="no-body">${esc(topNotice.body)}</p>` : ''}
+      </div>` : ''}
       <div class="panel">
         <div class="ch-section-head"><h2>오늘의 생일</h2></div>
         ${todays.length ? todays.map(m => `<span class="bday-chip">${esc(m.name)} 🎂</span>`).join('') : '<p class="plan-meta">오늘 생일인 교인이 없습니다.</p>'}
       </div>
+      ${nextServe.length ? `<div class="panel"><div class="ch-section-head"><h2>봉사 <span class="plan-meta">${esc((nextServeDate||'').slice(0,10))}</span></h2><button class="btn btn-text btn-sm" data-go="serve">전체 →</button></div>
+        <div class="sv-list">${nextServe.slice(0,8).map(s => `<div class="sv-row"><span class="sv-role">${esc(s.role)}</span><span class="sv-assignee">${esc(s.assignee||'미정')}</span></div>`).join('')}</div></div>` : ''}
       <div class="panel">
         <div class="ch-section-head"><h2>최근 기도제목</h2><button class="btn btn-text btn-sm" data-go="prayer">전체 보기 →</button></div>
         ${recent.length ? `<div class="pr-list">${recent.map(p => prayerCard(p, isAdmin())).join('')}</div>` : '<div class="ch-empty">아직 기도제목이 없습니다.</div>'}
