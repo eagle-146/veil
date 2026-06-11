@@ -50,15 +50,10 @@
     const a = new Uint8Array(6); crypto.getRandomValues(a);
     return [...a].map(x => cs[x % cs.length]).join('');
   }
-  // 한 '일차'가 읽는 장 범위 → "창세기 1–3장" 식으로 묶어 표기
-  function dayReading(plan, dayIndex) {
-    const days = plan.days || 365;
-    const from = Math.floor(dayIndex * TOTAL_CH / days);
-    const to = Math.floor((dayIndex + 1) * TOTAL_CH / days);
-    const slice = FLAT.slice(from, to);
+  // 장 묶음 → "창세기 1–3장" 식으로 표기
+  function groupChapters(slice) {
     if (!slice.length) return '—';
-    const parts = [];
-    let curBook = null, start = null, prev = null;
+    const parts = []; let curBook = null, start = null, prev = null;
     slice.forEach(({ book, ch }) => {
       if (book !== curBook) { if (curBook) parts.push(rng(curBook, start, prev)); curBook = book; start = ch; }
       prev = ch;
@@ -67,10 +62,21 @@
     return parts.join(', ');
     function rng(b, s, e) { return s === e ? `${b} ${s}장` : `${b} ${s}–${e}장`; }
   }
+  // 한 '일차'가 읽는 분량 (순차 또는 맥체인식 4트랙)
+  function dayReading(plan, dayIndex) {
+    const days = plan.days || 365;
+    if (plan.kind === 'mccheyne') {
+      const q = Math.floor(TOTAL_CH / 4);
+      const tracks = [[0, q], [q, 2*q], [2*q, 3*q], [3*q, TOTAL_CH]];
+      const slice = tracks.flatMap(([s, e]) => { const len = e - s; return FLAT.slice(s + Math.floor(dayIndex*len/days), s + Math.floor((dayIndex+1)*len/days)); });
+      return groupChapters(slice);
+    }
+    return groupChapters(FLAT.slice(Math.floor(dayIndex*TOTAL_CH/days), Math.floor((dayIndex+1)*TOTAL_CH/days)));
+  }
 
   /* ── 상태 ── */
   let db = null;
-  const state = { user: null, churches: [], churchId: null, church: null, role: 'member', view: 'home', editingMemberId: null, attDate: null, attType: '주일오전', attRows: [], groups: [], qtShares: [], servicePlans: [], openPlanId: null, sermons: [], openSermonId: null, editingSermonId: null, bulletins: [], openBulletinId: null, editingBulletinId: null, newcomers: [], notices: [], serveSlots: [],
+  const state = { user: null, churches: [], churchId: null, church: null, role: 'member', view: 'home', editingMemberId: null, attDate: null, attType: '주일오전', attRows: [], groups: [], qtShares: [], servicePlans: [], openPlanId: null, sermons: [], openSermonId: null, editingSermonId: null, bulletins: [], openBulletinId: null, editingBulletinId: null, newcomers: [], notices: [], serveSlots: [], finance: [], prayerComments: {}, prayerFilter: 'all', openPrayerId: null,
                   members: [], plan: null, myProgress: new Set(), allProgress: [], prayers: [] };
   const LAST_KEY = 'veil.church.last';
   const isAdmin = () => state.role === 'admin' || (state.church && state.church.owner_id === state.user?.id);
@@ -109,7 +115,7 @@
     await loadMembers();
     const me = myMember();
     state.role = me ? me.role : (state.church.owner_id === state.user.id ? 'admin' : 'member');
-    await Promise.all([loadPlan(), loadPrayers(), loadGroups(), loadQtShares(), loadServicePlans(), loadSermons(), loadBulletins(), loadNewcomers(), loadNotices(), loadServeSlots()]);
+    await Promise.all([loadPlan(), loadPrayers(), loadGroups(), loadQtShares(), loadServicePlans(), loadSermons(), loadBulletins(), loadNewcomers(), loadNotices(), loadServeSlots(), loadFinance()]);
     renderDashboard();
   }
   async function loadMembers() {
@@ -135,6 +141,9 @@
     const { data, error } = await db.from('prayer_requests').select('*').eq('church_id', state.churchId).order('created_at', { ascending: false });
     if (error) throw error;
     state.prayers = data || [];
+    const { data: cm } = await db.from('prayer_comments').select('*').eq('church_id', state.churchId).order('created_at');
+    state.prayerComments = {};
+    (cm || []).forEach(c => { (state.prayerComments[c.prayer_id] = state.prayerComments[c.prayer_id] || []).push(c); });
   }
 
   /* ════════════ 화면: 클라우드 꺼짐 / 로그인 ════════════ */
@@ -214,7 +223,7 @@
     { label: '말씀', tabs: [['reading', '통독'], ['qt', '큐티']] },
     { label: '예배', tabs: [['worship', '콘티'], ['sermon', '설교'], ['bulletin', '주보']] },
     { label: '소통', tabs: [['prayer', '기도제목'], ['notice', '공지']] },
-    { label: '운영', tabs: [['serve', '봉사']] },
+    { label: '운영', tabs: [['serve', '봉사'], ['finance', '헌금·재정']] },
   ];
   function tabsHtml() {
     return TAB_GROUPS.map(g =>
@@ -265,6 +274,7 @@
     if (state.view === 'newcomer') return renderNewcomer();
     if (state.view === 'notice') return renderNotice();
     if (state.view === 'serve') return renderServe();
+    if (state.view === 'finance') return renderFinance();
     if (state.view === 'reading') return renderReading();
     if (state.view === 'prayer') return renderPrayer();
   }
@@ -533,8 +543,9 @@
           <p class="panel-sub">시작일과 기간을 정하면 성경 66권(1189장)을 매일 분량으로 자동 분배합니다.</p>
           <div class="ch-form-row">
             <div class="field"><label>플랜 이름</label><input type="text" id="p-title" value="${esc(state.church.name)} 1년 통독" /></div>
-            <div class="field" style="flex:0 0 150px"><label>시작일</label><input type="date" id="p-start" value="${todayStr()}" /></div>
-            <div class="field" style="flex:0 0 120px"><label>기간(일)</label><input type="number" id="p-days" value="365" min="30" max="1189" /></div>
+            <div class="field" style="flex:0 0 150px"><label>유형</label><select id="p-kind"><option value="sequential">순차 통독</option><option value="mccheyne">맥체인식(4트랙)</option></select></div>
+            <div class="field" style="flex:0 0 140px"><label>시작일</label><input type="date" id="p-start" value="${todayStr()}" /></div>
+            <div class="field" style="flex:0 0 110px"><label>기간(일)</label><input type="number" id="p-days" value="365" min="30" max="1189" /></div>
             <button class="btn btn-gold btn-sm" id="p-create" style="margin-bottom:2px">플랜 시작</button>
           </div>
           <p class="ch-err" id="p-err" hidden></p>
@@ -543,9 +554,10 @@
         const title = document.getElementById('p-title').value.trim() || '성경통독';
         const start = document.getElementById('p-start').value || todayStr();
         const days = Math.max(30, Math.min(1189, +document.getElementById('p-days').value || 365));
+        const kind = document.getElementById('p-kind').value;
         ev.target.disabled = true;
         try {
-          const { error } = await db.from('reading_plans').insert({ church_id: state.churchId, title, start_date: start, days });
+          const { error } = await db.from('reading_plans').insert({ church_id: state.churchId, title, start_date: start, days, kind });
           if (error) throw error;
           toast('통독 플랜을 시작했습니다.'); await loadPlan(); renderReading();
         } catch (e) { const er = document.getElementById('p-err'); er.textContent = e.message || '생성 실패'; er.hidden = false; ev.target.disabled = false; }
@@ -562,12 +574,12 @@
 
     v.innerHTML = `
       <div class="plan-today">
-        <span class="pt-day">${esc(plan.title)} · ${beforeStart ? '시작 전' : `${todayIdx+1}일차 / ${plan.days}일`}</span>
+        <span class="pt-day">${esc(plan.title)} · ${plan.kind === 'mccheyne' ? '맥체인식 · ' : ''}${beforeStart ? '시작 전' : `${todayIdx+1}일차 / ${plan.days}일`}</span>
         <div class="pt-read">${beforeStart ? `${esc(plan.start_date)}에 시작합니다` : esc(dayReading(plan, todayIdx))}</div>
         ${beforeStart ? '' : `<button class="btn ${todayDone?'btn-ghost':'btn-gold'} btn-sm" id="mark-today">${todayDone ? '✓ 오늘 읽음' : '오늘 분량 읽음으로 표시'}</button>`}
       </div>
       <div class="panel">
-        <div class="ch-section-head"><h2>내 진도</h2></div>
+        <div class="ch-section-head"><h2>내 진도</h2>${admin ? '<button class="btn btn-text btn-sm" id="plan-del">플랜 삭제</button>' : ''}</div>
         <div class="plan-bar"><span style="width:${myPct}%"></span></div>
         <p class="plan-meta">${doneCount}/${plan.days}일 (${myPct}%) 완료</p>
       </div>
@@ -588,6 +600,13 @@
         if (isAdmin()) { const { data } = await db.from('reading_progress').select('user_id,day_index').eq('plan_id', plan.id); state.allProgress = data || []; }
         renderReading();
       } catch (e) { toast('저장 실패: ' + (e.message||e)); mt.disabled = false; }
+    });
+    const pd = document.getElementById('plan-del');
+    if (pd) pd.addEventListener('click', async () => {
+      if (!confirm('통독 플랜을 삭제할까요? 모든 교인의 진도 기록도 함께 삭제됩니다.')) return;
+      const { error } = await db.from('reading_plans').delete().eq('id', plan.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; }
+      toast('플랜을 삭제했습니다.'); await loadPlan(); renderReading();
     });
   }
   function renderAdminProgress(plan) {
@@ -1046,6 +1065,70 @@
     }));
   }
 
+  /* ════════════ 헌금 · 재정 ════════════ */
+  const FIN_CATS = { income: ['주일헌금', '십일조', '감사헌금', '선교헌금', '건축헌금', '기타'], expense: ['사역비', '선교비', '시설/관리', '구제', '인건비', '기타'] };
+  function won(n) { return '₩' + Number(n || 0).toLocaleString('ko-KR'); }
+  async function loadFinance() {
+    const { data, error } = await db.from('finance_entries').select('*').eq('church_id', state.churchId).order('entry_date', { ascending: false }).limit(200);
+    state.finance = error ? [] : (data || []);
+  }
+  function renderFinance() {
+    const v = document.getElementById('ch-view');
+    const admin = isAdmin();
+    const ym = todayStr().slice(0, 7);
+    const month = state.finance.filter(e => (e.entry_date || '').slice(0, 7) === ym);
+    const income = month.filter(e => e.kind === 'income').reduce((s, e) => s + Number(e.amount || 0), 0);
+    const expense = month.filter(e => e.kind === 'expense').reduce((s, e) => s + Number(e.amount || 0), 0);
+    v.innerHTML = `
+      <div class="home-grid">
+        <div class="home-card" style="cursor:default"><span class="hc-num" style="font-size:1.25rem">${won(income)}</span><span class="hc-label">이번 달 수입</span></div>
+        <div class="home-card" style="cursor:default"><span class="hc-num" style="font-size:1.25rem;color:#A6493B">${won(expense)}</span><span class="hc-label">이번 달 지출</span></div>
+        <div class="home-card" style="cursor:default"><span class="hc-num" style="font-size:1.25rem">${won(income - expense)}</span><span class="hc-label">잔액</span></div>
+      </div>
+      ${admin ? `<div class="panel">
+        <div class="ch-section-head"><h2>수입·지출 기록</h2></div>
+        <div class="ch-form-row">
+          <div class="field" style="flex:0 0 140px"><label>날짜</label><input type="date" id="fi-date" value="${todayStr()}" /></div>
+          <div class="field" style="flex:0 0 92px"><label>구분</label><select id="fi-kind"><option value="income">수입</option><option value="expense">지출</option></select></div>
+          <div class="field" style="flex:0 0 120px"><label>분류</label><select id="fi-cat">${FIN_CATS.income.map(c => `<option>${c}</option>`).join('')}</select></div>
+          <div class="field" style="flex:0 0 120px"><label>금액</label><input type="number" id="fi-amount" placeholder="0" min="0" /></div>
+          <div class="field"><label>메모</label><input type="text" id="fi-memo" /></div>
+          <button class="btn btn-gold btn-sm" id="fi-add" style="margin-bottom:2px">기록</button>
+        </div>
+        <p class="ch-err" id="fi-err" hidden></p>
+      </div>` : ''}
+      <div class="panel">
+        <div class="ch-section-head"><h2>재정 내역 <span class="plan-meta">투명 공개</span></h2></div>
+        ${state.finance.length ? `<div class="fi-list">${state.finance.slice(0, 50).map(e => `<div class="fi-row"><span class="fi-date">${esc((e.entry_date||'').slice(5))}</span><span class="fi-cat ${e.kind}">${esc(e.category)}</span><span class="fi-memo">${esc(e.memo||'')}</span><span class="fi-amt ${e.kind}">${e.kind === 'expense' ? '-' : '+'}${won(e.amount)}</span>${admin ? `<button class="fi-del" data-id="${e.id}" title="삭제">✕</button>` : ''}</div>`).join('')}</div>` : '<div class="ch-empty">아직 기록된 재정 내역이 없습니다.</div>'}
+      </div>
+      <div class="panel fi-online">
+        <div class="ch-section-head"><h2>온라인 헌금</h2></div>
+        <p class="plan-meta">헌금 계좌 안내 또는 간편결제(토스페이먼츠·카카오페이) 연동으로 온라인 헌금을 받을 수 있습니다.</p>
+        <button class="btn btn-ghost btn-sm" id="fi-online-btn" style="margin-top:8px">온라인 헌금하기</button>
+        <p class="ch-empty" style="text-align:left;background:none;color:var(--muted);font-size:.78rem;padding:8px 2px">⚠ 실제 결제·기부금영수증 연동은 사업자/PG 계약 후 활성화됩니다(현재 스텁).</p>
+      </div>`;
+    const onlineBtn = document.getElementById('fi-online-btn');
+    if (onlineBtn) onlineBtn.addEventListener('click', () => toast('온라인 헌금 결제 연동은 준비 중입니다. (PG 계약 후 활성화)'));
+    if (!admin) return;
+    const kindSel = document.getElementById('fi-kind');
+    kindSel.addEventListener('change', () => { document.getElementById('fi-cat').innerHTML = FIN_CATS[kindSel.value].map(c => `<option>${c}</option>`).join(''); });
+    const addBtn = document.getElementById('fi-add');
+    addBtn.addEventListener('click', async () => {
+      const amount = Number(document.getElementById('fi-amount').value);
+      const err = document.getElementById('fi-err');
+      if (!amount || amount <= 0) { err.textContent = '금액을 입력해 주세요.'; err.hidden = false; return; }
+      err.hidden = true; addBtn.disabled = true;
+      const row = { church_id: state.churchId, entry_date: document.getElementById('fi-date').value || todayStr(), kind: kindSel.value, category: document.getElementById('fi-cat').value, amount, memo: document.getElementById('fi-memo').value.trim() || null };
+      try { const { error } = await db.from('finance_entries').insert(row); if (error) throw error; toast('재정 내역을 기록했습니다.'); await loadFinance(); renderDashboard(); }
+      catch (e) { err.textContent = e.message || '기록 실패'; err.hidden = false; addBtn.disabled = false; }
+    });
+    v.querySelectorAll('.fi-del').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('이 재정 내역을 삭제할까요?')) return;
+      const { error } = await db.from('finance_entries').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; } toast('삭제했습니다.'); await loadFinance(); renderDashboard();
+    }));
+  }
+
   /* ════════════ 기도제목 / 중보기도 ════════════ */
   const ST = { open: '기도 요청', praying: '중보 중', answered: '응답됨' };
   function renderPrayer() {
@@ -1063,9 +1146,12 @@
         </div>
         <p class="ch-err" id="pr-err" hidden></p>
       </div>
-      <div class="pr-list">${
-        state.prayers.length ? state.prayers.map(p => prayerCard(p, admin)).join('')
-        : '<div class="ch-empty">아직 올라온 기도제목이 없습니다. 첫 기도제목을 나눠보세요.</div>'}</div>`;
+      <div class="pr-filter"><button class="${state.prayerFilter==='all'?'on':''}" data-flt="all">전체</button><button class="${state.prayerFilter==='mine'?'on':''}" data-flt="mine">🙏 내 중보</button></div>
+      <div class="pr-list">${(() => {
+        const list = state.prayerFilter === 'mine' ? state.prayers.filter(p => p.intercessor_id === state.user.id) : state.prayers;
+        return list.length ? list.map(p => prayerCard(p, admin)).join('')
+          : `<div class="ch-empty">${state.prayerFilter === 'mine' ? '내가 중보 중인 기도제목이 없습니다.' : '아직 올라온 기도제목이 없습니다. 첫 기도제목을 나눠보세요.'}</div>`;
+      })()}</div>`;
 
     document.getElementById('pr-add').addEventListener('click', async (ev) => {
       const title = document.getElementById('pr-title').value.trim();
@@ -1085,11 +1171,28 @@
     });
 
     v.querySelectorAll('[data-pr-act]').forEach(b => b.addEventListener('click', () => prayerAction(b.dataset.prAct, b.dataset.id)));
+    v.querySelectorAll('[data-flt]').forEach(b => b.addEventListener('click', () => { state.prayerFilter = b.dataset.flt; renderDashboard(); }));
+    v.querySelectorAll('.pr-cmt-toggle').forEach(b => b.addEventListener('click', () => { state.openPrayerId = state.openPrayerId === b.dataset.id ? null : b.dataset.id; renderDashboard(); }));
+    v.querySelectorAll('.pr-cmt-add').forEach(b => b.addEventListener('click', async () => {
+      const inp = v.querySelector('.pr-cmt-input[data-id="' + b.dataset.id + '"]');
+      const body = inp.value.trim(); if (!body) return;
+      const { error } = await db.from('prayer_comments').insert({ prayer_id: b.dataset.id, church_id: state.churchId, author_id: state.user.id, author_name: myName, body });
+      if (error) { toast('댓글 실패: ' + error.message); return; }
+      await loadPrayers(); renderDashboard();
+    }));
+    v.querySelectorAll('.pr-cmt-input').forEach(inp => inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const btn = v.querySelector('.pr-cmt-add[data-id="' + inp.dataset.id + '"]'); if (btn) btn.click(); } }));
+    v.querySelectorAll('.pr-cmt-del').forEach(b => b.addEventListener('click', async () => {
+      const { error } = await db.from('prayer_comments').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; }
+      await loadPrayers(); renderDashboard();
+    }));
   }
   function prayerCard(p, admin) {
     const who = p.is_anonymous ? '익명' : (p.author_name || '교인');
-    const mine = p.author_id === state.user.id;
-    const canEdit = mine || admin;
+    const canEdit = p.author_id === state.user.id || admin;
+    const comments = state.prayerComments[p.id] || [];
+    const open = state.openPrayerId === p.id;
+    const iIntercede = p.intercessor_id === state.user.id;
     const acts = [];
     if (p.status !== 'praying') acts.push(`<button data-pr-act="pray" data-id="${p.id}">🙏 중보하기</button>`);
     if (canEdit && p.status !== 'answered') acts.push(`<button data-pr-act="answer" data-id="${p.id}">✓ 응답됨</button>`);
@@ -1097,8 +1200,12 @@
     return `<div class="pr-card">
       <div class="pr-top"><span class="pr-status st-${p.status}">${ST[p.status]||p.status}</span><h4>${esc(p.title)}</h4></div>
       ${p.body ? `<p class="pr-body">${esc(p.body)}</p>` : ''}
-      <div class="pr-foot"><span class="who"><b>${esc(who)}</b> · ${esc((p.created_at||'').slice(0,10))}</span>
-        <span class="pr-actions">${acts.join('')}</span></div>
+      <div class="pr-foot"><span class="who"><b>${esc(who)}</b> · ${esc((p.created_at||'').slice(0,10))}${iIntercede ? ' · <span class="pr-mine">내가 중보 중</span>' : ''}</span>
+        <span class="pr-actions"><button class="pr-cmt-toggle" data-id="${p.id}">💬 ${comments.length||''}</button>${acts.join('')}</span></div>
+      ${open ? `<div class="pr-comments">
+        ${comments.map(c => `<div class="pr-cmt"><b>${esc(c.author_name||'교인')}</b>${esc(c.body)}${(c.author_id===state.user.id||admin) ? ` <button class="pr-cmt-del" data-id="${c.id}" title="삭제">✕</button>` : ''}</div>`).join('') || '<p class="plan-meta">첫 댓글을 남겨보세요.</p>'}
+        <div class="pr-cmt-form"><input type="text" class="pr-cmt-input" data-id="${p.id}" placeholder="격려·함께 기도 한마디" /><button class="btn btn-ghost btn-sm pr-cmt-add" data-id="${p.id}">등록</button></div>
+      </div>` : ''}
     </div>`;
   }
   async function prayerAction(act, id) {

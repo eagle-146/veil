@@ -204,6 +204,37 @@
 .sv-del { border: none; background: none; color: var(--muted); cursor: pointer; opacity: .5; font-size: .9rem; }
 .sv-del:hover { opacity: 1; color: #A6493B; }
 
+/* 헌금·재정 */
+.fi-list { display: grid; gap: 1px; }
+.fi-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .88rem; }
+.fi-date { flex: 0 0 42px; color: var(--muted); font-size: .8rem; }
+.fi-cat { flex: 0 0 88px; font-weight: 600; font-size: .82rem; }
+.fi-cat.income { color: var(--sage); }
+.fi-cat.expense { color: #A6493B; }
+.fi-memo { flex: 1; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-amt { flex: 0 0 auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fi-amt.income { color: var(--ink); }
+.fi-amt.expense { color: #A6493B; }
+.fi-del { flex: none; border: none; background: none; color: var(--muted); cursor: pointer; opacity: .5; }
+.fi-del:hover { opacity: 1; color: #A6493B; }
+.fi-online { border-style: dashed; }
+
+/* 기도제목 댓글 · 필터 */
+.pr-filter { display: flex; gap: 6px; margin-bottom: 14px; }
+.pr-filter button { border: 1px solid var(--line-2); background: var(--white); border-radius: 999px; padding: 5px 14px; font: inherit; font-size: .84rem; color: var(--ink-2); cursor: pointer; }
+.pr-filter button.on { border-color: var(--gold); background: var(--gold-soft); color: #8C6E4A; font-weight: 600; }
+.pr-mine { color: var(--gold); font-weight: 600; }
+.pr-actions .pr-cmt-toggle { border: 1px solid var(--line-2); background: var(--white); border-radius: var(--r-sm); font: inherit; font-size: .78rem; color: var(--ink-2); padding: 4px 10px; cursor: pointer; }
+.pr-actions .pr-cmt-toggle:hover { border-color: var(--gold); color: var(--gold); }
+.pr-comments { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.pr-cmt { font-size: .86rem; color: var(--ink-2); padding: 4px 0; line-height: 1.5; }
+.pr-cmt b { color: var(--ink); margin-right: 5px; }
+.pr-cmt .pr-cmt-del { border: none; background: none; color: var(--muted); cursor: pointer; font-size: .74rem; opacity: .5; margin-left: 4px; }
+.pr-cmt .pr-cmt-del:hover { opacity: 1; color: #A6493B; }
+.pr-cmt-form { display: flex; gap: 6px; margin-top: 8px; }
+.pr-cmt-form input { flex: 1; font: inherit; font-size: .85rem; padding: 7px 12px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--white); color: var(--ink); }
+.pr-cmt-form input:focus { outline: none; border-color: var(--gold); }
+
 /* 토스트 */
 .ch-toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 999px; font-size: .9rem; opacity: 0; transition: opacity .25s, transform .25s; z-index: 2000; pointer-events: none; }
 .ch-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

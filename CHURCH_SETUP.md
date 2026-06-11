@@ -44,6 +44,8 @@ create table if not exists public.reading_plans (
   days       int  not null default 365,              -- 통독 기간(일). 1189장을 days로 분배
   created_at timestamptz default now()
 );
+-- 통독 유형: sequential | mccheyne (맥체인식 4트랙)
+alter table public.reading_plans add column if not exists kind text not null default 'sequential';
 
 create table if not exists public.reading_progress (
   id        uuid primary key default gen_random_uuid(),
@@ -364,15 +366,54 @@ create policy sv_sel on public.serve_slots for select using (is_church_member(ch
 create policy sv_ins on public.serve_slots for insert with check (is_church_admin(church_id));
 create policy sv_upd on public.serve_slots for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
 create policy sv_del on public.serve_slots for delete using (is_church_admin(church_id));
+
+-- 14) 헌금·재정 (finance_entries) — 집계 공개, 입력은 관리자 ----------
+create table if not exists public.finance_entries (
+  id         uuid primary key default gen_random_uuid(),
+  church_id  uuid not null references public.churches on delete cascade,
+  entry_date date not null default current_date,
+  kind       text not null default 'income',   -- income|expense
+  category   text not null,
+  amount     numeric not null default 0,
+  memo       text,
+  created_at timestamptz default now()
+);
+alter table public.finance_entries enable row level security;
+drop policy if exists fi_sel on public.finance_entries;
+drop policy if exists fi_ins on public.finance_entries;
+drop policy if exists fi_upd on public.finance_entries;
+drop policy if exists fi_del on public.finance_entries;
+create policy fi_sel on public.finance_entries for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy fi_ins on public.finance_entries for insert with check (is_church_admin(church_id));
+create policy fi_upd on public.finance_entries for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
+create policy fi_del on public.finance_entries for delete using (is_church_admin(church_id));
+
+-- 15) 기도제목 댓글 (prayer_comments) -------------------------------
+create table if not exists public.prayer_comments (
+  id          uuid primary key default gen_random_uuid(),
+  prayer_id   uuid not null references public.prayer_requests on delete cascade,
+  church_id   uuid not null references public.churches on delete cascade,
+  author_id   uuid references auth.users on delete set null,
+  author_name text,
+  body        text not null,
+  created_at  timestamptz default now()
+);
+alter table public.prayer_comments enable row level security;
+drop policy if exists pc_sel on public.prayer_comments;
+drop policy if exists pc_ins on public.prayer_comments;
+drop policy if exists pc_del on public.prayer_comments;
+create policy pc_sel on public.prayer_comments for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy pc_ins on public.prayer_comments for insert with check (is_church_member(church_id) or is_church_admin(church_id));
+create policy pc_del on public.prayer_comments for delete using (author_id = auth.uid() or is_church_admin(church_id));
 ```
 
 확인:
 ```sql
 select tablename, count(*) from pg_policies
-where tablename in ('churches','church_members','reading_plans','reading_progress','prayer_requests','attendance','church_groups','qt_shares','service_plans','sermons','bulletins','newcomers','notices','serve_slots')
+where tablename in ('churches','church_members','reading_plans','reading_progress','prayer_requests','attendance','church_groups','qt_shares','service_plans','sermons','bulletins','newcomers','notices','serve_slots','finance_entries','prayer_comments')
 group by tablename;
 ```
-14개 테이블이 모두 보이면 정상입니다.
+16개 테이블이 모두 보이면 정상입니다.
 
 ## 동작 개념
 - **교회 생성** = 로그인한 사용자가 `churches`에 insert(자동으로 owner=admin) → 본인 `church_members`(admin) 추가.
