@@ -349,7 +349,14 @@
 
   document.addEventListener('click', () => { document.querySelectorAll('.auth-chip.open').forEach(c => c.classList.remove('open')); });
 
-  window.Veil = { auth, store, cloud: { enabled: CLOUD } };
+  window.Veil = {
+    auth, store,
+    cloud: {
+      enabled: CLOUD,
+      // Supabase 클라이언트(테이블 직접 쿼리용 — 교회/멀티테넌트 기능). 클라우드 모드에서만.
+      async client() { if (!CLOUD) throw new Error('클라우드(Supabase) 설정이 필요합니다.'); await ensureCloud(); return sb; },
+    },
+  };
 
   if (CLOUD) ensureCloud().catch(e => console.warn('[Veil] 클라우드 초기화 실패:', e));
 })();

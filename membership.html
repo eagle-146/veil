@@ -14,6 +14,14 @@
   <style>
     .pricing.page{ padding:128px 0 96px; min-height:100vh; }
     @media (max-width:560px){ .pricing.page{ padding:100px 0 64px; } }
+    /* 교회(B2B) 섹션 */
+    .church-b2b{ margin-top:72px; padding-top:8px; }
+    .plan-grid--4{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    @media (max-width:1080px){ .plan-grid--4{ grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:560px){ .plan-grid--4{ grid-template-columns:1fr; } }
+    .plan-grid--4 .plan{ padding:24px 22px; }
+    .soon{ font-size:.66rem; color:var(--gold); border:1px solid var(--gold-soft); border-radius:999px; padding:1px 7px; margin-left:4px; vertical-align:1px; white-space:nowrap; }
+    .church-note{ margin-top:22px; font-size:.82rem; color:var(--muted); line-height:1.7; max-width:70ch; }
   </style>
 </head>
 <body>
@@ -144,6 +152,63 @@
         <button class="btn btn-ghost btn-block" data-plan="family">가족과 시작하기</button>
       </article>
 
+    </div>
+
+    <!-- 교회를 위한 Veil (B2B) -->
+    <div class="church-b2b reveal" id="church">
+      <header class="section-head section-head--start">
+        <span class="kicker"><i>·</i> 교회를 위한 Veil</span>
+        <h2>한 교회의 경건을, 함께.</h2>
+        <p class="lead">전교인 성경통독 · 기도제목 중보 · 교적과 생일 관리까지. 작은 교회일수록 더 가볍게 시작하세요.</p>
+      </header>
+      <div class="plan-grid plan-grid--4">
+        <article class="plan">
+          <header class="plan-head"><h3>씨앗</h3><p class="plan-tag">개척·미자립 · ~30명</p></header>
+          <div class="plan-price"><span class="num">₩0</span><span class="per">/월</span></div>
+          <ul class="plan-feat list-veil">
+            <li>전교인 성경통독 플랜 · 진도 현황</li>
+            <li>기도제목 · 중보기도 배정</li>
+            <li>교적 · 생일 관리</li>
+            <li>최대 30명</li>
+          </ul>
+          <a class="btn btn-gold btn-block" href="church.html">교회 시작하기</a>
+          <p class="plan-foot">미자립·개척교회를 섬기는 무료 플랜</p>
+        </article>
+        <article class="plan plan-featured">
+          <span class="plan-badge">추천</span>
+          <header class="plan-head"><h3>등불</h3><p class="plan-tag">중소형 · ~150명</p></header>
+          <div class="plan-price"><span class="num">₩49,000</span><span class="per">/월</span></div>
+          <ul class="plan-feat list-veil">
+            <li>씨앗의 모든 기능</li>
+            <li>생일 <strong>알림톡 자동 축하</strong></li>
+            <li>예배 콘티 · 설교자료 공유 <span class="soon">예정</span></li>
+            <li>최대 150명</li>
+          </ul>
+          <a class="btn btn-gold btn-block" href="mailto:apps@junsang.kr?subject=Veil 교회(등불) 도입 문의">도입 문의</a>
+        </article>
+        <article class="plan">
+          <header class="plan-head"><h3>등대</h3><p class="plan-tag">중형 · ~500명</p></header>
+          <div class="plan-price"><span class="num">₩129,000</span><span class="per">/월</span></div>
+          <ul class="plan-feat list-veil">
+            <li>등불의 모든 기능</li>
+            <li>온라인 헌금 · 투명 재정 보고 <span class="soon">예정</span></li>
+            <li>새가족 양육 트랙 <span class="soon">예정</span></li>
+            <li>최대 500명</li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="mailto:apps@junsang.kr?subject=Veil 교회(등대) 도입 문의">도입 문의</a>
+        </article>
+        <article class="plan">
+          <header class="plan-head"><h3>성전</h3><p class="plan-tag">대형 · 무제한</p></header>
+          <div class="plan-price"><span class="num">협의</span></div>
+          <ul class="plan-feat list-veil">
+            <li>등대의 모든 기능 · 인원 무제한</li>
+            <li>맞춤 기능 · 데이터 이관</li>
+            <li>전담 지원</li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="mailto:apps@junsang.kr?subject=Veil 교회(성전) 도입 문의">상담 요청</a>
+        </article>
+      </div>
+      <p class="church-note">* 베타 기간에는 모든 교회 플랜을 무료로 제공하며, 정식 요금은 도입 교회와 협의해 확정합니다. 수익의 일부는 미자립교회 사역에 환원됩니다.</p>
     </div>
 
     <div class="tool-compare reveal">
