@@ -223,15 +223,94 @@ create policy g_sel on public.church_groups for select using (is_church_member(c
 create policy g_ins on public.church_groups for insert with check (is_church_admin(church_id));
 create policy g_upd on public.church_groups for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
 create policy g_del on public.church_groups for delete using (is_church_admin(church_id));
+
+-- 7) 큐티 나눔 (qt_shares) -------------------------------------------
+create table if not exists public.qt_shares (
+  id         uuid primary key default gen_random_uuid(),
+  church_id  uuid not null references public.churches on delete cascade,
+  author_id  uuid references auth.users on delete set null,
+  author_name text,
+  share_date date default current_date,
+  verse_ref  text,
+  content    text not null,
+  created_at timestamptz default now()
+);
+alter table public.qt_shares enable row level security;
+drop policy if exists qt_sel on public.qt_shares;
+drop policy if exists qt_ins on public.qt_shares;
+drop policy if exists qt_del on public.qt_shares;
+create policy qt_sel on public.qt_shares for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy qt_ins on public.qt_shares for insert with check (is_church_member(church_id) or is_church_admin(church_id));
+create policy qt_del on public.qt_shares for delete using (author_id = auth.uid() or is_church_admin(church_id));
+
+-- 8) 예배 콘티 (service_plans) — 순서 항목은 jsonb 배열 -------------
+-- ⚠ 찬송가/CCM 가사 저작권: 가사 본문은 저장하지 말 것. 곡명·순서·키만.
+create table if not exists public.service_plans (
+  id           uuid primary key default gen_random_uuid(),
+  church_id    uuid not null references public.churches on delete cascade,
+  service_date date not null default current_date,
+  title        text not null,
+  items        jsonb not null default '[]',   -- [{kind,title,detail}, ...]
+  created_at   timestamptz default now()
+);
+alter table public.service_plans enable row level security;
+drop policy if exists sp_sel on public.service_plans;
+drop policy if exists sp_ins on public.service_plans;
+drop policy if exists sp_upd on public.service_plans;
+drop policy if exists sp_del on public.service_plans;
+create policy sp_sel on public.service_plans for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy sp_ins on public.service_plans for insert with check (is_church_admin(church_id));
+create policy sp_upd on public.service_plans for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
+create policy sp_del on public.service_plans for delete using (is_church_admin(church_id));
+
+-- 9) 설교 노트 (sermons) --------------------------------------------
+create table if not exists public.sermons (
+  id          uuid primary key default gen_random_uuid(),
+  church_id   uuid not null references public.churches on delete cascade,
+  sermon_date date not null default current_date,
+  title       text not null,
+  preacher    text,
+  scripture   text,
+  content     text,
+  created_at  timestamptz default now()
+);
+alter table public.sermons enable row level security;
+drop policy if exists se_sel on public.sermons;
+drop policy if exists se_ins on public.sermons;
+drop policy if exists se_upd on public.sermons;
+drop policy if exists se_del on public.sermons;
+create policy se_sel on public.sermons for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy se_ins on public.sermons for insert with check (is_church_admin(church_id));
+create policy se_upd on public.sermons for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
+create policy se_del on public.sermons for delete using (is_church_admin(church_id));
+
+-- 10) 주보 (bulletins) ----------------------------------------------
+create table if not exists public.bulletins (
+  id         uuid primary key default gen_random_uuid(),
+  church_id  uuid not null references public.churches on delete cascade,
+  title      text not null,
+  week_date  date not null default current_date,
+  content    text,
+  created_at timestamptz default now()
+);
+alter table public.bulletins enable row level security;
+drop policy if exists bl_sel on public.bulletins;
+drop policy if exists bl_ins on public.bulletins;
+drop policy if exists bl_upd on public.bulletins;
+drop policy if exists bl_del on public.bulletins;
+create policy bl_sel on public.bulletins for select using (is_church_member(church_id) or is_church_admin(church_id));
+create policy bl_ins on public.bulletins for insert with check (is_church_admin(church_id));
+create policy bl_upd on public.bulletins for update using (is_church_admin(church_id)) with check (is_church_admin(church_id));
+create policy bl_del on public.bulletins for delete using (is_church_admin(church_id));
 ```
 
 확인:
 ```sql
 select tablename, count(*) from pg_policies
-where tablename in ('churches','church_members','reading_plans','reading_progress','prayer_requests','attendance','church_groups')
+where tablename in ('churches','church_members','reading_plans','reading_progress','prayer_requests','attendance','church_groups','qt_shares','service_plans','sermons','bulletins')
 group by tablename;
 ```
-7개 테이블이 모두 보이면 정상입니다.
+11개 테이블이 모두 보이면 정상입니다.
 
 ## 동작 개념
 - **교회 생성** = 로그인한 사용자가 `churches`에 insert(자동으로 owner=admin) → 본인 `church_members`(admin) 추가.

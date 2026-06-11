@@ -70,7 +70,7 @@
 
   /* ── 상태 ── */
   let db = null;
-  const state = { user: null, churches: [], churchId: null, church: null, role: 'member', view: 'home', editingMemberId: null, attDate: null, attType: '주일오전', attRows: [], groups: [],
+  const state = { user: null, churches: [], churchId: null, church: null, role: 'member', view: 'home', editingMemberId: null, attDate: null, attType: '주일오전', attRows: [], groups: [], qtShares: [], servicePlans: [], openPlanId: null, sermons: [], openSermonId: null, editingSermonId: null, bulletins: [], openBulletinId: null, editingBulletinId: null,
                   members: [], plan: null, myProgress: new Set(), allProgress: [], prayers: [] };
   const LAST_KEY = 'veil.church.last';
   const isAdmin = () => state.role === 'admin' || (state.church && state.church.owner_id === state.user?.id);
@@ -109,7 +109,7 @@
     await loadMembers();
     const me = myMember();
     state.role = me ? me.role : (state.church.owner_id === state.user.id ? 'admin' : 'member');
-    await Promise.all([loadPlan(), loadPrayers(), loadGroups()]);
+    await Promise.all([loadPlan(), loadPrayers(), loadGroups(), loadQtShares(), loadServicePlans(), loadSermons(), loadBulletins()]);
     renderDashboard();
   }
   async function loadMembers() {
@@ -236,6 +236,10 @@
         <button data-view="attendance" class="${state.view==='attendance'?'active':''}">출석</button>
         <button data-view="groups" class="${state.view==='groups'?'active':''}">구역·셀</button>
         <button data-view="reading" class="${state.view==='reading'?'active':''}">전교인 통독</button>
+        <button data-view="qt" class="${state.view==='qt'?'active':''}">큐티 나눔</button>
+        <button data-view="worship" class="${state.view==='worship'?'active':''}">예배 콘티</button>
+        <button data-view="sermon" class="${state.view==='sermon'?'active':''}">설교 노트</button>
+        <button data-view="bulletin" class="${state.view==='bulletin'?'active':''}">주보</button>
         <button data-view="prayer" class="${state.view==='prayer'?'active':''}">기도제목<span class="tab-count">${state.prayers.length||''}</span></button>
       </div>
       <div id="ch-view"></div>`;
@@ -251,6 +255,10 @@
     if (state.view === 'members') return renderMembers();
     if (state.view === 'attendance') return renderAttendance();
     if (state.view === 'groups') return renderGroups();
+    if (state.view === 'qt') return renderQt();
+    if (state.view === 'worship') return renderWorship();
+    if (state.view === 'sermon') return renderSermon();
+    if (state.view === 'bulletin') return renderBulletin();
     if (state.view === 'reading') return renderReading();
     if (state.view === 'prayer') return renderPrayer();
   }
@@ -586,6 +594,292 @@
     return `<div class="panel"><div class="ch-section-head"><h2>전교인 진도 <span class="plan-meta">${rows.length}명</span></h2></div>
       <div class="progress-list">${rows.map(r => { const pct = Math.round(r.n/plan.days*100); return `
         <div class="progress-row"><span class="pr-name">${esc(r.name)}</span><span class="plan-bar"><span style="width:${pct}%"></span></span><span class="pr-pct">${pct}%</span></div>`; }).join('')}</div></div>`;
+  }
+
+  /* ════════════ 큐티 나눔 ════════════ */
+  async function loadQtShares() {
+    const { data, error } = await db.from('qt_shares').select('*').eq('church_id', state.churchId).order('created_at', { ascending: false }).limit(50);
+    state.qtShares = error ? [] : (data || []);
+  }
+  function qtCard(q) {
+    const canDel = q.author_id === state.user.id || isAdmin();
+    return `<div class="qt-card">
+      <div class="qt-head"><span class="qt-author">${esc(q.author_name || '교인')}</span><span class="qt-date">${esc((q.share_date || q.created_at || '').slice(0,10))}</span>${canDel ? `<button class="qt-del" data-id="${q.id}" title="삭제">✕</button>` : ''}</div>
+      ${q.verse_ref ? `<div class="qt-ref">${esc(q.verse_ref)}</div>` : ''}
+      <p class="qt-body">${esc(q.content)}</p>
+    </div>`;
+  }
+  function renderQt() {
+    const v = document.getElementById('ch-view');
+    const myName = (myMember() && myMember().name) || state.user.name || (state.user.email || '').split('@')[0];
+    v.innerHTML = `
+      <div class="panel">
+        <div class="ch-section-head"><h2>오늘의 큐티 나눔</h2></div>
+        <div class="field" style="max-width:240px"><label>본문 (선택)</label><input type="text" id="qt-ref" placeholder="예) 시편 23:1-3" /></div>
+        <div class="field"><label>묵상 나눔</label><textarea id="qt-body" rows="3" placeholder="오늘 말씀에서 받은 은혜를 나눠주세요"></textarea></div>
+        <div style="display:flex;justify-content:flex-end"><button class="btn btn-gold btn-sm" id="qt-add">나눔 올리기</button></div>
+        <p class="ch-err" id="qt-err" hidden></p>
+      </div>
+      <div class="qt-feed">${state.qtShares.length ? state.qtShares.map(qtCard).join('') : '<div class="ch-empty">아직 나눔이 없습니다. 첫 묵상을 나눠보세요.</div>'}</div>`;
+    document.getElementById('qt-add').addEventListener('click', async (ev) => {
+      const body = document.getElementById('qt-body').value.trim();
+      const err = document.getElementById('qt-err');
+      if (!body) { err.textContent = '나눔 내용을 입력해 주세요.'; err.hidden = false; return; }
+      err.hidden = true; ev.target.disabled = true;
+      try {
+        const { error } = await db.from('qt_shares').insert({ church_id: state.churchId, author_id: state.user.id, author_name: myName, share_date: todayStr(), verse_ref: document.getElementById('qt-ref').value.trim() || null, content: body });
+        if (error) throw error;
+        toast('나눔을 올렸습니다.'); await loadQtShares(); renderDashboard();
+      } catch (e) { err.textContent = e.message || '등록 실패'; err.hidden = false; ev.target.disabled = false; }
+    });
+    v.querySelectorAll('.qt-del').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('이 나눔을 삭제할까요?')) return;
+      const { error } = await db.from('qt_shares').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; }
+      toast('삭제했습니다.'); await loadQtShares(); renderDashboard();
+    }));
+  }
+
+  /* ════════════ 예배 콘티 ════════════ */
+  const WORSHIP_KINDS = ['찬양', '기도', '말씀', '봉헌', '성찬', '광고', '축도', '특송', '기타'];
+  async function loadServicePlans() {
+    const { data, error } = await db.from('service_plans').select('*').eq('church_id', state.churchId).order('service_date', { ascending: false }).limit(30);
+    state.servicePlans = error ? [] : (data || []);
+  }
+  async function updatePlanItems(planId, items) {
+    const { error } = await db.from('service_plans').update({ items }).eq('id', planId);
+    if (error) { toast('저장 실패: ' + error.message); return; }
+    await loadServicePlans(); renderDashboard();
+  }
+  function worshipCard(p, admin) {
+    const open = state.openPlanId === p.id;
+    const items = Array.isArray(p.items) ? p.items : [];
+    return `<div class="panel worship-card">
+      <div class="ch-section-head w-toggle" style="cursor:pointer" data-toggle="${p.id}"><h2>${esc(p.title)} <span class="plan-meta">${esc((p.service_date||'').slice(0,10))} · ${items.length}순서</span></h2>${admin ? `<button class="btn btn-text btn-sm w-del" data-id="${p.id}">삭제</button>` : ''}</div>
+      ${open ? `
+        <ol class="worship-items">${items.length ? items.map((it,i) => `<li class="worship-item"><span class="wi-kind">${esc(it.kind||'')}</span><span class="wi-title">${esc(it.title||'')}</span>${it.detail?`<span class="wi-detail">${esc(it.detail)}</span>`:''}${admin ? `<span class="wi-ops"><button data-pid="${p.id}" data-mv="up" data-i="${i}" ${i===0?'disabled':''}>↑</button><button data-pid="${p.id}" data-mv="down" data-i="${i}" ${i===items.length-1?'disabled':''}>↓</button><button data-pid="${p.id}" data-mv="del" data-i="${i}">✕</button></span>` : ''}</li>`).join('') : '<li class="plan-meta" style="list-style:none">순서가 없습니다.</li>'}</ol>
+        ${admin ? `<div class="ch-form-row" style="margin-top:10px">
+          <div class="field" style="flex:0 0 100px"><label>구분</label><select id="wi-kind-${p.id}">${WORSHIP_KINDS.map(k => `<option>${k}</option>`).join('')}</select></div>
+          <div class="field"><label>제목</label><input type="text" id="wi-title-${p.id}" placeholder="곡명/내용" /></div>
+          <div class="field" style="flex:0 0 130px"><label>비고</label><input type="text" id="wi-detail-${p.id}" placeholder="키/인도자" /></div>
+          <button class="btn btn-ghost btn-sm wi-add" data-id="${p.id}" style="margin-bottom:2px">+ 순서</button>
+        </div>` : ''}` : ''}
+    </div>`;
+  }
+  function renderWorship() {
+    const v = document.getElementById('ch-view');
+    const admin = isAdmin();
+    v.innerHTML = `
+      ${admin ? `<div class="panel">
+        <div class="ch-section-head"><h2>예배 콘티 만들기</h2></div>
+        <div class="ch-form-row">
+          <div class="field" style="flex:0 0 160px"><label>날짜</label><input type="date" id="w-date" value="${todayStr()}" /></div>
+          <div class="field"><label>제목</label><input type="text" id="w-title" placeholder="예) 주일 1부 예배" /></div>
+          <button class="btn btn-gold btn-sm" id="w-add" style="margin-bottom:2px">만들기</button>
+        </div>
+      </div>` : ''}
+      ${state.servicePlans.length ? state.servicePlans.map(p => worshipCard(p, admin)).join('') : '<div class="ch-empty">아직 예배 콘티가 없습니다.</div>'}
+      ${admin ? '<p class="ch-empty" style="text-align:left;background:none;color:var(--muted);font-size:.78rem;padding:8px 2px">⚠ 찬송가·CCM 가사는 저작권이 있어 본문을 그대로 싣지 마세요. 곡 제목·순서·키 표기만 권장합니다.</p>' : ''}`;
+    v.querySelectorAll('.w-toggle').forEach(t => t.addEventListener('click', (e) => {
+      if (e.target.closest('.w-del')) return;
+      const id = t.dataset.toggle;
+      state.openPlanId = state.openPlanId === id ? null : id;
+      renderDashboard();
+    }));
+    if (!admin) return;
+    const addBtn = document.getElementById('w-add');
+    if (addBtn) addBtn.addEventListener('click', async () => {
+      const title = document.getElementById('w-title').value.trim() || '예배';
+      const date = document.getElementById('w-date').value || todayStr();
+      const { data, error } = await db.from('service_plans').insert({ church_id: state.churchId, service_date: date, title, items: [] }).select().single();
+      if (error) { toast('생성 실패: ' + error.message); return; }
+      state.openPlanId = data.id; toast('콘티를 만들었습니다.'); await loadServicePlans(); renderDashboard();
+    });
+    v.querySelectorAll('.w-del').forEach(b => b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('이 콘티를 삭제할까요?')) return;
+      const { error } = await db.from('service_plans').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; }
+      toast('삭제했습니다.'); await loadServicePlans(); renderDashboard();
+    }));
+    v.querySelectorAll('.wi-add').forEach(b => b.addEventListener('click', async () => {
+      const pid = b.dataset.id;
+      const plan = state.servicePlans.find(p => p.id === pid); if (!plan) return;
+      const title = document.getElementById('wi-title-' + pid).value.trim();
+      if (!title) { toast('제목을 입력해 주세요.'); return; }
+      const item = { kind: document.getElementById('wi-kind-' + pid).value, title, detail: document.getElementById('wi-detail-' + pid).value.trim() };
+      const items = (Array.isArray(plan.items) ? plan.items : []).concat([item]);
+      await updatePlanItems(pid, items);
+    }));
+    v.querySelectorAll('.wi-ops button').forEach(b => b.addEventListener('click', async () => {
+      const pid = b.dataset.pid, i = +b.dataset.i, mv = b.dataset.mv;
+      const plan = state.servicePlans.find(p => p.id === pid); if (!plan) return;
+      const items = (Array.isArray(plan.items) ? plan.items : []).slice();
+      if (mv === 'del') items.splice(i, 1);
+      else if (mv === 'up' && i > 0) { [items[i-1], items[i]] = [items[i], items[i-1]]; }
+      else if (mv === 'down' && i < items.length - 1) { [items[i+1], items[i]] = [items[i], items[i+1]]; }
+      await updatePlanItems(pid, items);
+    }));
+  }
+
+  /* ════════════ 설교 노트 ════════════ */
+  async function loadSermons() {
+    const { data, error } = await db.from('sermons').select('*').eq('church_id', state.churchId).order('sermon_date', { ascending: false }).limit(40);
+    state.sermons = error ? [] : (data || []);
+  }
+  function sermonCard(s, admin) {
+    const open = state.openSermonId === s.id;
+    const body = esc(s.content || '').replace(/_{3,}/g, '<span class="se-blank"></span>');
+    return `<div class="sermon-card ${open ? 'open' : ''}">
+      <div class="se-head" data-toggle="${s.id}">
+        <div><strong>${esc(s.title)}</strong><div class="se-meta">${esc((s.sermon_date||'').slice(0,10))}${s.preacher ? ' · ' + esc(s.preacher) : ''}${s.scripture ? ' · ' + esc(s.scripture) : ''}</div></div>
+        <span class="se-caret">${open ? '▲' : '▼'}</span>
+      </div>
+      ${open ? `<div class="se-content">${body || '<span class="plan-meta">내용 없음</span>'}</div>${admin ? `<div class="se-actions"><button class="btn btn-text btn-sm se-edit" data-id="${s.id}">수정</button><button class="btn btn-text btn-sm se-del" data-id="${s.id}">삭제</button></div>` : ''}` : ''}
+    </div>`;
+  }
+  function renderSermon() {
+    const v = document.getElementById('ch-view');
+    const admin = isAdmin();
+    const editing = admin ? state.sermons.find(s => s.id === state.editingSermonId) : null;
+    v.innerHTML = `
+      ${admin ? `<div class="panel" id="se-form">
+        <div class="ch-section-head"><h2>${editing ? '설교 노트 수정' : '설교 노트 작성'}</h2></div>
+        <div class="ch-form-row">
+          <div class="field" style="flex:0 0 150px"><label>날짜</label><input type="date" id="se-date" value="${editing ? editing.sermon_date : todayStr()}" /></div>
+          <div class="field"><label>제목</label><input type="text" id="se-title" placeholder="설교 제목" value="${editing ? esc(editing.title) : ''}" /></div>
+          <div class="field" style="flex:0 0 120px"><label>설교자</label><input type="text" id="se-preacher" value="${editing ? esc(editing.preacher||'') : ''}" /></div>
+        </div>
+        <div class="field"><label>본문</label><input type="text" id="se-scripture" placeholder="예) 요한복음 3:16" value="${editing ? esc(editing.scripture||'') : ''}" /></div>
+        <div class="field"><label>노트 (빈칸은 ___ 세 개 이상)</label><textarea id="se-content" rows="5" placeholder="설교 요지·빈칸노트">${editing ? esc(editing.content||'') : ''}</textarea></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-gold btn-sm" id="se-save">${editing ? '저장' : '올리기'}</button>${editing ? '<button class="btn btn-ghost btn-sm" id="se-cancel">취소</button>' : ''}</div>
+        <p class="ch-err" id="se-err" hidden></p>
+      </div>` : ''}
+      <div class="panel">
+        <div class="ch-section-head"><h2>설교 노트</h2><button class="btn btn-ghost btn-sm" id="se-qr">📱 QR로 열기</button></div>
+        ${state.sermons.length ? `<div class="sermon-list">${state.sermons.map(s => sermonCard(s, admin)).join('')}</div>` : '<div class="ch-empty">아직 설교 노트가 없습니다.</div>'}
+      </div>`;
+    v.querySelectorAll('.se-head').forEach(h => h.addEventListener('click', () => {
+      const id = h.dataset.toggle;
+      state.openSermonId = state.openSermonId === id ? null : id;
+      renderDashboard();
+    }));
+    const qrBtn = document.getElementById('se-qr');
+    if (qrBtn) qrBtn.addEventListener('click', () => {
+      const url = location.origin + location.pathname;
+      const qr = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(url)}`;
+      const ov = el(`<div class="qr-overlay"><div class="qr-box"><button class="qr-close" aria-label="닫기">✕</button><h3>교회 페이지 QR</h3><img src="${qr}" alt="QR" width="220" height="220" /><p>교인이 휴대폰으로 스캔하면 이 페이지가 열립니다.</p><code>${esc(url)}</code></div></div>`);
+      ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('.qr-close')) ov.remove(); });
+      document.body.appendChild(ov);
+    });
+    if (!admin) return;
+    const saveBtn = document.getElementById('se-save');
+    saveBtn.addEventListener('click', async () => {
+      const title = document.getElementById('se-title').value.trim();
+      const err = document.getElementById('se-err');
+      if (!title) { err.textContent = '제목을 입력해 주세요.'; err.hidden = false; return; }
+      err.hidden = true; saveBtn.disabled = true;
+      const row = { sermon_date: document.getElementById('se-date').value || todayStr(), title, preacher: document.getElementById('se-preacher').value.trim() || null, scripture: document.getElementById('se-scripture').value.trim() || null, content: document.getElementById('se-content').value.trim() || null };
+      try {
+        if (editing) { const { error } = await db.from('sermons').update(row).eq('id', editing.id); if (error) throw error; state.editingSermonId = null; toast('수정했습니다.'); }
+        else { const { error } = await db.from('sermons').insert({ church_id: state.churchId, ...row }); if (error) throw error; toast('설교 노트를 올렸습니다.'); }
+        await loadSermons(); renderDashboard();
+      } catch (e) { err.textContent = e.message || '저장 실패'; err.hidden = false; saveBtn.disabled = false; }
+    });
+    const cancelBtn = document.getElementById('se-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => { state.editingSermonId = null; renderDashboard(); });
+    v.querySelectorAll('.se-edit').forEach(b => b.addEventListener('click', () => {
+      state.editingSermonId = b.dataset.id; state.openSermonId = b.dataset.id; renderDashboard();
+      const f = document.getElementById('se-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    v.querySelectorAll('.se-del').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('이 설교 노트를 삭제할까요?')) return;
+      const { error } = await db.from('sermons').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; }
+      toast('삭제했습니다.'); await loadSermons(); renderDashboard();
+    }));
+  }
+
+  /* ════════════ 주보 (디지털) ════════════ */
+  function showPageQr() {
+    const url = location.origin + location.pathname;
+    const qr = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(url)}`;
+    const ov = el(`<div class="qr-overlay"><div class="qr-box"><button class="qr-close" aria-label="닫기">✕</button><h3>교회 페이지 QR</h3><img src="${qr}" alt="QR" width="220" height="220" /><p>교인이 휴대폰으로 스캔하면 이 페이지가 열립니다.</p><code>${esc(url)}</code></div></div>`);
+    ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('.qr-close')) ov.remove(); });
+    document.body.appendChild(ov);
+  }
+  function thisWeekBirthdays() {
+    const today = new Date(); const out = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      const mm = d.getMonth() + 1, dd = d.getDate();
+      state.members.forEach(m => { if (m.birthday) { const p = m.birthday.split('-'); if (+p[1] === mm && +p[2] === dd) out.push({ name: m.name, label: `${mm}/${dd}` }); } });
+    }
+    return out;
+  }
+  async function loadBulletins() {
+    const { data, error } = await db.from('bulletins').select('*').eq('church_id', state.churchId).order('week_date', { ascending: false }).limit(30);
+    state.bulletins = error ? [] : (data || []);
+  }
+  function bulletinCard(b, admin) {
+    const open = state.openBulletinId === b.id;
+    let extra = '';
+    if (open) { const bd = thisWeekBirthdays(); extra = bd.length ? `<div class="bl-extra"><strong>🎂 이번 주 생일</strong> ${bd.map(x => `${esc(x.name)}(${x.label})`).join(', ')}</div>` : ''; }
+    return `<div class="sermon-card ${open ? 'open' : ''}">
+      <div class="se-head" data-bl="${b.id}"><div><strong>${esc(b.title)}</strong><div class="se-meta">${esc((b.week_date||'').slice(0,10))}</div></div><span class="se-caret">${open ? '▲' : '▼'}</span></div>
+      ${open ? `<div class="se-content">${esc(b.content||'') || '<span class="plan-meta">내용 없음</span>'}${extra}</div>${admin ? `<div class="se-actions"><button class="btn btn-text btn-sm bl-edit" data-id="${b.id}">수정</button><button class="btn btn-text btn-sm bl-del" data-id="${b.id}">삭제</button></div>` : ''}` : ''}
+    </div>`;
+  }
+  function renderBulletin() {
+    const v = document.getElementById('ch-view');
+    const admin = isAdmin();
+    const editing = admin ? state.bulletins.find(b => b.id === state.editingBulletinId) : null;
+    v.innerHTML = `
+      ${admin ? `<div class="panel" id="bl-form">
+        <div class="ch-section-head"><h2>${editing ? '주보 수정' : '주보 작성'}</h2></div>
+        <div class="ch-form-row">
+          <div class="field"><label>제목</label><input type="text" id="bl-title" placeholder="예) 6월 둘째 주 주보" value="${editing ? esc(editing.title) : ''}" /></div>
+          <div class="field" style="flex:0 0 160px"><label>주일 날짜</label><input type="date" id="bl-date" value="${editing ? editing.week_date : todayStr()}" /></div>
+        </div>
+        <div class="field"><label>내용 (광고·소식)</label><textarea id="bl-content" rows="6" placeholder="예배 안내, 광고, 헌금 안내 등">${editing ? esc(editing.content||'') : ''}</textarea></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-gold btn-sm" id="bl-save">${editing ? '저장' : '발행'}</button>${editing ? '<button class="btn btn-ghost btn-sm" id="bl-cancel">취소</button>' : ''}</div>
+        <p class="ch-err" id="bl-err" hidden></p>
+      </div>` : ''}
+      <div class="panel">
+        <div class="ch-section-head"><h2>주보</h2><button class="btn btn-ghost btn-sm" id="bl-qr">📱 QR로 열기</button></div>
+        ${state.bulletins.length ? `<div class="sermon-list">${state.bulletins.map(b => bulletinCard(b, admin)).join('')}</div>` : '<div class="ch-empty">아직 발행된 주보가 없습니다.</div>'}
+      </div>`;
+    v.querySelectorAll('.se-head[data-bl]').forEach(h => h.addEventListener('click', () => {
+      const id = h.dataset.bl; state.openBulletinId = state.openBulletinId === id ? null : id; renderDashboard();
+    }));
+    const qrBtn = document.getElementById('bl-qr');
+    if (qrBtn) qrBtn.addEventListener('click', showPageQr);
+    if (!admin) return;
+    const saveBtn = document.getElementById('bl-save');
+    saveBtn.addEventListener('click', async () => {
+      const title = document.getElementById('bl-title').value.trim();
+      const err = document.getElementById('bl-err');
+      if (!title) { err.textContent = '제목을 입력해 주세요.'; err.hidden = false; return; }
+      err.hidden = true; saveBtn.disabled = true;
+      const row = { title, week_date: document.getElementById('bl-date').value || todayStr(), content: document.getElementById('bl-content').value.trim() || null };
+      try {
+        if (editing) { const { error } = await db.from('bulletins').update(row).eq('id', editing.id); if (error) throw error; state.editingBulletinId = null; toast('수정했습니다.'); }
+        else { const { error } = await db.from('bulletins').insert({ church_id: state.churchId, ...row }); if (error) throw error; toast('주보를 발행했습니다.'); }
+        await loadBulletins(); renderDashboard();
+      } catch (e) { err.textContent = e.message || '저장 실패'; err.hidden = false; saveBtn.disabled = false; }
+    });
+    const cancelBtn = document.getElementById('bl-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => { state.editingBulletinId = null; renderDashboard(); });
+    v.querySelectorAll('.bl-edit').forEach(b => b.addEventListener('click', () => {
+      state.editingBulletinId = b.dataset.id; state.openBulletinId = b.dataset.id; renderDashboard();
+      const f = document.getElementById('bl-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    v.querySelectorAll('.bl-del').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('이 주보를 삭제할까요?')) return;
+      const { error } = await db.from('bulletins').delete().eq('id', b.dataset.id);
+      if (error) { toast('삭제 실패: ' + error.message); return; }
+      toast('삭제했습니다.'); await loadBulletins(); renderDashboard();
+    }));
   }
 
   /* ════════════ 기도제목 / 중보기도 ════════════ */

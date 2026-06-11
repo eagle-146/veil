@@ -121,6 +121,52 @@
 .group-chip .gm-remove { border: none; background: none; color: var(--muted); cursor: pointer; font-size: .8rem; padding: 0; line-height: 1; }
 .group-chip .gm-remove:hover { color: #A6493B; }
 
+/* 큐티 나눔 */
+.qt-feed { display: grid; gap: 12px; }
+.qt-card { background: var(--white); border: 1px solid var(--line); border-left: 3px solid var(--sage); border-radius: var(--r-md); padding: 14px 16px; }
+.qt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.qt-author { font-weight: 600; color: var(--ink); font-size: .92rem; }
+.qt-date { font-size: .78rem; color: var(--muted); }
+.qt-head .qt-del { margin-left: auto; border: none; background: none; color: var(--muted); cursor: pointer; opacity: .5; }
+.qt-head .qt-del:hover { opacity: 1; color: #A6493B; }
+.qt-ref { font-size: .82rem; color: var(--sage); font-weight: 600; margin-bottom: 4px; }
+.qt-body { margin: 0; color: var(--ink-2); white-space: pre-wrap; line-height: 1.65; font-size: .92rem; }
+
+/* 예배 콘티 */
+.worship-items { list-style: none; margin: 8px 0 0; padding: 0; counter-reset: wi; }
+.worship-item { counter-increment: wi; display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+.worship-item::before { content: counter(wi); width: 22px; height: 22px; flex: none; border-radius: 50%; background: var(--bg-2); color: var(--ink-3); font-size: .72rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; }
+.wi-kind { flex: 0 0 52px; font-size: .76rem; color: var(--gold); font-weight: 600; }
+.wi-title { flex: 1; color: var(--ink); }
+.wi-detail { color: var(--muted); font-size: .82rem; }
+.wi-ops { display: inline-flex; gap: 2px; }
+.wi-ops button { border: 1px solid var(--line-2); background: var(--white); border-radius: var(--r-sm); width: 24px; height: 24px; cursor: pointer; color: var(--ink-3); font-size: .78rem; padding: 0; }
+.wi-ops button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.wi-ops button:disabled { opacity: .35; cursor: default; }
+
+/* 설교 노트 */
+.sermon-list { display: grid; gap: 10px; }
+.sermon-card { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--white); overflow: hidden; }
+.se-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 16px; cursor: pointer; }
+.se-head:hover { background: var(--bg-2); }
+.se-head strong { color: var(--ink); }
+.se-meta { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+.se-caret { color: var(--ink-3); font-size: .7rem; flex: none; }
+.se-content { padding: 6px 16px 14px; white-space: pre-wrap; line-height: 1.75; color: var(--ink-2); font-size: .92rem; border-top: 1px solid var(--line); }
+.se-blank { display: inline-block; min-width: 58px; border-bottom: 1.5px solid var(--gold); margin: 0 3px; vertical-align: baseline; }
+.se-actions { display: flex; gap: 8px; padding: 0 16px 12px; }
+.qr-overlay { position: fixed; inset: 0; background: rgba(24,24,24,.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.qr-box { background: var(--white); border-radius: var(--r-lg); padding: 26px; text-align: center; position: relative; max-width: 300px; box-shadow: var(--shadow-lg); }
+.qr-box h3 { margin: 0 0 14px; font-size: 1.1rem; }
+.qr-box img { border-radius: var(--r-sm); background: #fff; }
+.qr-box p { font-size: .82rem; color: var(--ink-3); margin: 12px 0 8px; line-height: 1.55; }
+.qr-box code { font-size: .72rem; color: var(--muted); word-break: break-all; }
+.qr-close { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 1rem; cursor: pointer; color: var(--ink-3); }
+
+/* 주보 */
+.bl-extra { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: .88rem; color: var(--ink-2); }
+.bl-extra strong { color: var(--gold); }
+
 /* 토스트 */
 .ch-toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 999px; font-size: .9rem; opacity: 0; transition: opacity .25s, transform .25s; z-index: 2000; pointer-events: none; }
 .ch-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
